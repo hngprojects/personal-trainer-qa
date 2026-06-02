@@ -1,11 +1,10 @@
 {
   "info": {
-    "_postman_id": "ef7aec99-0846-4b99-8f1f-b7cafa726566",
+    "_postman_id": "d7deb4d8-4bd3-4609-81d0-acd958ee1717",
     "name": "Personal Trainer — Staging",
     "description": "Complete QA test suite for all Personal Trainer API endpoints. Run folder 0 (Auth) first to seed {{admin_token}}. Client-only endpoints (Bookings, Sessions, Reviews) require {{client_token}} — set this manually from a Google Sign-In flow or the /dev/token endpoint on staging.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "55046730",
-    "_collection_link": "https://go.postman.co/collection/55046730-ef7aec99-0846-4b99-8f1f-b7cafa726566?source=collection_link"
+    "_exporter_id": "38892914"
   },
   "item": [
     {
@@ -64,6 +63,96 @@
           "response": []
         },
         {
+          "name": "SETUP (Step 1) — Register client account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has message', () => pm.expect(json).to.have.property('message'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{client_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Step 1 of 3 for client token setup. Registers a new client account. Check email for OTP then run Step 2."
+          },
+          "response": []
+        },
+        {
+          "name": "SETUP (Step 2) — Verify client email (OTP)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Email verified', () => pm.expect(json.message.toLowerCase()).to.include('verif'));",
+                  "pm.test('Has access_token', () => pm.expect(json.data).to.have.property('access_token'));",
+                  "if (json.data && json.data.access_token) {",
+                  "  pm.environment.set('client_token', json.data.access_token);",
+                  "  pm.environment.set('access_token', json.data.access_token);",
+                  "}",
+                  "if (json.data && json.data.refresh_token) {",
+                  "  pm.environment.set('refresh_token', json.data.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"code\": \"{{client_otp}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/verify-email",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            },
+            "description": "Step 2 of 3. Set client_otp variable in your environment with the OTP from the email. Then run this."
+          },
+          "response": []
+        },
+        {
           "name": "Forgot password — valid email → 200 (generic ack)",
           "event": [
             {
@@ -111,10 +200,10 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
                   "pm.test('Does not 500', () => pm.response.to.not.have.status(500));",
                   "const json = pm.response.json();",
-                  "pm.test('Returns access_token', () => pm.expect(json.data).to.have.property('access_token'));"
+                  "pm.test('Returns message', () => pm.expect(json).to.have.property('message'));"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -141,7 +230,7 @@
               },
               {
                 "key": "Authorization",
-                "value": "{{vault:bearer-token}}"
+                "value": "{{access_token}}"
               }
             ],
             "body": {
@@ -817,19 +906,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/trainers?category=strength",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "trainers"
-              ],
-              "query": [
-                {
-                  "key": "category",
-                  "value": "strength"
-                }
-              ]
+              "raw": ""
             }
           },
           "response": []
@@ -1570,7 +1647,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "let json; try { json = pm.response.json(); } catch (e) { json = null; }",
+                  "const json = pm.response.json();",
                   "pm.test('Bio updated', () => pm.expect(json.data.bio).to.equal('Updated bio from QA test'));"
                 ],
                 "type": "text/javascript"
@@ -1857,6 +1934,16 @@
             }
           ],
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{trainer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PUT",
             "header": [
               {
@@ -1879,17 +1966,7 @@
                 "availability"
               ]
             },
-            "description": "Uses {{client_token}} — must be a trainer's JWT. Set this variable from a trainer login before running. 0=Sunday, 1=Monday ... 6=Saturday.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{trainer_token}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "description": "Uses {{client_token}} — must be a trainer's JWT. Set this variable from a trainer login before running. 0=Sunday, 1=Monday ... 6=Saturday."
           },
           "response": []
         },
@@ -1909,6 +1986,16 @@
             }
           ],
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{trainer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PUT",
             "header": [
               {
@@ -1930,16 +2017,6 @@
                 "me",
                 "availability"
               ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{trainer_token}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "response": []
@@ -1960,6 +2037,16 @@
             }
           ],
           "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{trainer_token}}",
+                  "type": "string"
+                }
+              ]
+            },
             "method": "PUT",
             "header": [
               {
@@ -1982,22 +2069,27 @@
                 "availability"
               ]
             },
-            "description": "Empty array clears all availability slots.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{trainer_token}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "description": "Empty array clears all availability slots."
           },
           "response": []
         },
         {
           "name": "GET trainer own availability (me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has availability array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.have.property('availability');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -2019,25 +2111,21 @@
             },
             "description": "Trainer reads their own weekly availability slots."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET trainer own availability — no auth → 401",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Has availability array', () => {",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json.data).to.have.property('availability');",
-                  "});"
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET trainer own availability — no auth → 401",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -2058,21 +2146,23 @@
               ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET trainer availability by ID",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                  "pm.test('Status 200 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET trainer availability by ID",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -2094,23 +2184,21 @@
             },
             "description": "Any authenticated user can view a trainer's weekly availability."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET trainer availability — not found → 404",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 or 404', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
-                  "});"
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET trainer availability — not found → 404",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -2131,52 +2219,10 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "PUT trainer availability by ID (admin)",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/trainers/{{created_trainer_id}}/availability",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "trainers",
-                "{{created_trainer_id}}",
-                "availability"
-              ]
-            },
-            "description": "Admin sets availability on behalf of a specific trainer.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"availability\": [\n    {\n      \"day_of_week\": 1,\n      \"start_time\": \"09:00\",\n      \"end_time\": \"17:00\",\n      \"timezone\": \"Africa/Lagos\"\n    }\n  ]\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -2189,7 +2235,38 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"availability\": [\n    {\n      \"day_of_week\": 1,\n      \"start_time\": \"09:00\",\n      \"end_time\": \"17:00\",\n      \"timezone\": \"Africa/Lagos\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/trainers/{{created_trainer_id}}/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "{{created_trainer_id}}",
+                "availability"
+              ]
+            },
+            "description": "Admin sets availability on behalf of a specific trainer."
+          },
+          "response": []
         }
       ]
     },
@@ -2631,20 +2708,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/bookings/upcoming?timezone=Africa%2FLagos",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "bookings",
-                "upcoming"
-              ],
-              "query": [
-                {
-                  "key": "timezone",
-                  "value": "Africa%2FLagos"
-                }
-              ]
+              "raw": ""
             }
           },
           "response": []
@@ -2886,7 +2950,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "let json; try { json = pm.response.json(); } catch (e) { json = null; }",
+                  "const json = pm.response.json();",
                   "pm.test('data is array or object', () => pm.expect(json).to.have.property('data'));"
                 ],
                 "type": "text/javascript"
@@ -2897,19 +2961,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/booking-slots?timezone=Africa%2FLagos",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "booking-slots"
-              ],
-              "query": [
-                {
-                  "key": "timezone",
-                  "value": "Africa%2FLagos"
-                }
-              ]
+              "raw": ""
             },
             "description": "Public endpoint — no auth required."
           },
@@ -2922,17 +2974,11 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 201 or 403', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([201, 403]);",
-                  "});",
-                  "if (pm.response.code === 201) {",
-                  "  const json = pm.response.json();",
-                  "  if (json.data && json.data.id) {",
-                  "    pm.collectionVariables.set('booking_slot_id', json.data.id);",
-                  "  }",
-                  "}"
+                  ""
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -2972,11 +3018,11 @@
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 400 or 403', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([400, 403]);",
-                  "});"
+                  ""
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -3064,7 +3110,7 @@
                   "});",
                   "if (pm.response.code === 200) {",
                   "  const json = pm.response.json();",
-                  "  pm.test('data is array', () => pm.expect(json.data.data).to.be.an('array'));",
+                  "  pm.test('data is array', () => pm.expect(json.data).to.be.an('array'));",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -3593,21 +3639,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/trainers/{{created_trainer_id}}/reviews?limit=10",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "trainers",
-                "{{created_trainer_id}}",
-                "reviews"
-              ],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "10"
-                }
-              ]
+              "raw": ""
             },
             "description": "Public endpoint — no auth required. Cursor-paginated."
           },
@@ -3632,21 +3664,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/trainers/{{created_trainer_id}}/reviews?limit=999",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "trainers",
-                "{{created_trainer_id}}",
-                "reviews"
-              ],
-              "query": [
-                {
-                  "key": "limit",
-                  "value": "999"
-                }
-              ]
+              "raw": ""
             },
             "description": "limit max is 100. Sending 999 should return 422."
           },
@@ -3859,6 +3877,21 @@
         },
         {
           "name": "GET admin sessions — paginated",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has data array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -3879,7 +3912,42 @@
             },
             "description": "List all booking sessions (admin view). Supports ?page=&limit= query params."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET admin sessions — no auth → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/sessions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "sessions"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET admin discovery bookings — paginated",
           "event": [
             {
               "listen": "test",
@@ -3894,42 +3962,7 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET admin sessions — no auth → 401",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/admin/sessions",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "sessions"
-              ]
-            },
-            "auth": {
-              "type": "noauth"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "GET admin discovery bookings — paginated",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -3950,25 +3983,21 @@
             },
             "description": "List all discovery call bookings (admin view). Supports ?page=&limit= query params."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET admin user/trainer count",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Has data array', () => {",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json).to.have.property('data');",
-                  "});"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET admin user/trainer count",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -3991,18 +4020,7 @@
             },
             "description": "Returns total user and trainer counts for the admin dashboard."
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -4052,16 +4070,25 @@
           "response": []
         },
         {
-          "name": "Add to waitlist — duplicate email → 200",
+          "name": "Add to waitlist — duplicate email → 409",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 (already on waitlist)', () => pm.response.to.have.status(200));",
+                  "pm.test('Status 409 (already on waitlist)', () => pm.response.to.have.status(409));",
                   "const json = pm.response.json();",
                   "pm.test('Message says already on waitlist', () => pm.expect(json.message.toLowerCase()).to.include('already'));"
                 ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "packages": {},
                 "type": "text/javascript"
               }
             }
@@ -4214,19 +4241,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/waitlist?email=qa-waitlist@fitcall-test.com",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "waitlist"
-              ],
-              "query": [
-                {
-                  "key": "email",
-                  "value": "qa-waitlist@fitcall-test.com"
-                }
-              ]
+              "raw": ""
             }
           },
           "response": []
@@ -4364,10 +4379,12 @@
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('Has code OK', () => pm.expect(json.code).to.equal('OK'));",
+                  "pm.test('Service is healthy', () => pm.expect(json.message).to.equal('Service is healthy'));",
                   "pm.test('Has timestamp', () => pm.expect(json.data).to.have.property('timestamp'));"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -4396,7 +4413,7 @@
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('Has code OK', () => pm.expect(json.code).to.equal('OK'));"
+                  "pm.test('Status is success', () => pm.expect(json.status).to.equal('success'));"
                 ],
                 "type": "text/javascript"
               }
@@ -4425,6 +4442,21 @@
       "item": [
         {
           "name": "GET trainer own sessions (me)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has data', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -4446,25 +4478,21 @@
             },
             "description": "Trainer lists their own sessions. Supports ?page=&limit=&status= query params."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET trainer sessions — no auth → 401",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Has data', () => {",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json).to.have.property('data');",
-                  "});"
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET trainer sessions — no auth → 401",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -4485,51 +4513,10 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "POST trainer set-password (account setup)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/trainers/set-password",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "trainers",
-                "set-password"
-              ]
-            },
-            "description": "First-time password setup for a trainer account. Token is sent via email when the trainer is created.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"token\": \"REPLACE_WITH_SETUP_TOKEN\",\n  \"new_password\": \"{{trainer_setup_password}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -4542,10 +4529,7 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "POST trainer set-password — invalid token → 400",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -4554,6 +4538,15 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"REPLACE_WITH_SETUP_TOKEN\",\n  \"new_password\": \"{{trainer_setup_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{base_url}}/trainers/set-password",
               "host": [
@@ -4564,17 +4557,12 @@
                 "set-password"
               ]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"token\": \"invalid-token\",\n  \"new_password\": \"{{trainer_setup_password}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "First-time password setup for a trainer account. Token is sent via email when the trainer is created."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "POST trainer set-password — invalid token → 400",
           "event": [
             {
               "listen": "test",
@@ -4585,7 +4573,36 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"invalid-token\",\n  \"new_password\": \"{{trainer_setup_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/trainers/set-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "set-password"
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -4594,6 +4611,25 @@
       "item": [
         {
           "name": "GET trainer images",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.data && json.data.length > 0) {",
+                  "    pm.collectionVariables.set('created_image_id', json.data[0].id);",
+                  "  }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -4615,29 +4651,25 @@
             },
             "description": "List all images for a trainer."
           },
+          "response": []
+        },
+        {
+          "name": "POST upload trainer images",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 or 404', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
-                  "});",
-                  "if (pm.response.code === 200) {",
-                  "  const json = pm.response.json();",
-                  "  if (json.data && json.data.length > 0) {",
-                  "    pm.collectionVariables.set('created_image_id', json.data[0].id);",
-                  "  }",
-                  "}"
+                  "pm.test('Status 202 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([202, 404, 503]);",
+                  "});"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
-          "response": []
-        },
-        {
-          "name": "POST upload trainer images",
           "request": {
             "method": "POST",
             "header": [
@@ -4652,10 +4684,8 @@
                 {
                   "key": "images",
                   "type": "file",
-                  "src": [
-                    "postman/fixtures/sample.png"
-                  ],
-                  "description": "Upload up to 5 images (JPEG/PNG/WebP, max 5MB each)"
+                  "description": "Upload up to 5 images (JPEG/PNG/WebP, max 5MB each)",
+                  "value": null
                 }
               ]
             },
@@ -4672,24 +4702,25 @@
             },
             "description": "Upload one or more images for a trainer. Multipart form. Max 5 images total per trainer."
           },
+          "response": []
+        },
+        {
+          "name": "POST upload trainer images — no auth → 401",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 or 404', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 202, 404, 503]);",
-                  "});"
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
                 ],
                 "type": "text/javascript"
               }
             }
           ],
-          "response": []
-        },
-        {
-          "name": "POST upload trainer images — no auth → 401",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [],
             "url": {
@@ -4702,26 +4733,25 @@
                 "{{created_trainer_id}}",
                 "images"
               ]
-            },
-            "auth": {
-              "type": "noauth"
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "DELETE trainer image",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                  "pm.test('Status 200 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "DELETE trainer image",
+          ],
           "request": {
             "method": "DELETE",
             "header": [
@@ -4744,23 +4774,21 @@
             },
             "description": "Delete a specific image by image ID. created_image_id is set by the GET images test script."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "DELETE trainer image — not found → 404",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 or 404', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
-                  "});"
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "DELETE trainer image — not found → 404",
+          ],
           "request": {
             "method": "DELETE",
             "header": [
@@ -4782,18 +4810,7 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -4802,6 +4819,19 @@
       "item": [
         {
           "name": "POST upload trainer intro video",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202 or 404 or 503', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 202, 404, 503]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -4816,8 +4846,8 @@
                 {
                   "key": "video",
                   "type": "file",
-                  "src": [],
-                  "description": "MP4/MOV video file, max 200MB, max 5 minutes"
+                  "description": "MP4/MOV video file, max 200MB, max 5 minutes",
+                  "value": null
                 }
               ]
             },
@@ -4834,24 +4864,25 @@
             },
             "description": "Upload a trainer intro video. Multipart form. Accepted formats: MP4, MOV, AVI, WebM. Max 200MB, max 300s."
           },
+          "response": []
+        },
+        {
+          "name": "POST upload trainer intro video — no auth → 401",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 202 or 404 or 503', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 202, 404, 503]);",
-                  "});"
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
                 ],
                 "type": "text/javascript"
               }
             }
           ],
-          "response": []
-        },
-        {
-          "name": "POST upload trainer intro video — no auth → 401",
           "request": {
+            "auth": {
+              "type": "noauth"
+            },
             "method": "POST",
             "header": [],
             "url": {
@@ -4864,26 +4895,25 @@
                 "{{created_trainer_id}}",
                 "intro-video"
               ]
-            },
-            "auth": {
-              "type": "noauth"
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET stream trainer intro video",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                  "pm.test('Status 200 or 302 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302, 404]);",
+                  "});"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET stream trainer intro video",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -4906,23 +4936,21 @@
             },
             "description": "Stream or redirect to the trainer's intro video. Returns a redirect to the video URL."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET stream trainer intro video — not found → 404",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 or 302 or 404', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 302, 404]);",
-                  "});"
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET stream trainer intro video — not found → 404",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -4944,18 +4972,7 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -4964,6 +4981,21 @@
       "item": [
         {
           "name": "GET discovery slots",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has slots', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -4983,54 +5015,10 @@
             },
             "description": "List available discovery call slots. Supports optional ?date= filter."
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "pm.test('Has slots', () => {",
-                  "  const json = pm.response.json();",
-                  "  pm.expect(json).to.have.property('data');",
-                  "});"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "POST create discovery slot (admin)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/discovery-slots",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "discovery-slots"
-              ]
-            },
-            "description": "Admin creates a recurring weekly discovery call slot.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"day_of_week\": 1,\n  \"start_time\": \"09:00\",\n  \"end_time\": \"10:00\",\n  \"timezone\": \"Africa/Lagos\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -5048,10 +5036,7 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "POST create discovery slot — invalid time format → 400",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5060,6 +5045,15 @@
                 "value": "Bearer {{admin_token}}"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"day_of_week\": 1,\n  \"start_time\": \"09:00\",\n  \"end_time\": \"10:00\",\n  \"timezone\": \"Africa/Lagos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{base_url}}/discovery-slots",
               "host": [
@@ -5069,17 +5063,12 @@
                 "discovery-slots"
               ]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"day_of_week\": 1,\n  \"start_time\": \"9am\",\n  \"end_time\": \"10am\",\n  \"timezone\": \"Africa/Lagos\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Admin creates a recurring weekly discovery call slot."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "POST create discovery slot — invalid time format → 400",
           "event": [
             {
               "listen": "test",
@@ -5090,10 +5079,7 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "POST create discovery slot — no auth → 401",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5102,6 +5088,15 @@
                 "value": "Bearer {{admin_token}}"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"day_of_week\": 1,\n  \"start_time\": \"9am\",\n  \"end_time\": \"10am\",\n  \"timezone\": \"Africa/Lagos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
             "url": {
               "raw": "{{base_url}}/discovery-slots",
               "host": [
@@ -5110,18 +5105,12 @@
               "path": [
                 "discovery-slots"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"day_of_week\": 1,\n  \"start_time\": \"09:00\",\n  \"end_time\": \"10:00\",\n  \"timezone\": \"Africa/Lagos\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "POST create discovery slot — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -5132,40 +5121,38 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "PUT update discovery slot",
+          ],
           "request": {
-            "method": "PUT",
+            "method": "POST",
             "header": [
               {
                 "key": "Authorization",
                 "value": "Bearer {{admin_token}}"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/discovery-slots/{{booking_slot_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "discovery-slots",
-                "{{booking_slot_id}}"
-              ]
-            },
-            "description": "Admin updates a discovery call slot. booking_slot_id is set by the POST create test script.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"day_of_week\": 2,\n  \"start_time\": \"10:00\",\n  \"end_time\": \"11:00\",\n  \"timezone\": \"Africa/Lagos\"\n}",
+              "raw": "{\n  \"day_of_week\": 1,\n  \"start_time\": \"09:00\",\n  \"end_time\": \"10:00\",\n  \"timezone\": \"Africa/Lagos\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
+            },
+            "url": {
+              "raw": "{{base_url}}/discovery-slots",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "discovery-slots"
+              ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "PUT update discovery slot",
           "event": [
             {
               "listen": "test",
@@ -5178,10 +5165,7 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "PUT update discovery slot — not found → 404",
+          ],
           "request": {
             "method": "PUT",
             "header": [
@@ -5190,27 +5174,31 @@
                 "value": "Bearer {{admin_token}}"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/discovery-slots/00000000-0000-0000-0000-000000000000",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "discovery-slots",
-                "00000000-0000-0000-0000-000000000000"
-              ]
-            },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"day_of_week\": 1,\n  \"start_time\": \"09:00\",\n  \"end_time\": \"10:00\",\n  \"timezone\": \"Africa/Lagos\"\n}",
+              "raw": "{\n  \"day_of_week\": 2,\n  \"start_time\": \"10:00\",\n  \"end_time\": \"11:00\",\n  \"timezone\": \"Africa/Lagos\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
               }
-            }
+            },
+            "url": {
+              "raw": "{{base_url}}/discovery-slots/{{booking_slot_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "discovery-slots",
+                "{{booking_slot_id}}"
+              ]
+            },
+            "description": "Admin updates a discovery call slot. booking_slot_id is set by the POST create test script."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "PUT update discovery slot — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -5221,10 +5209,52 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"day_of_week\": 1,\n  \"start_time\": \"09:00\",\n  \"end_time\": \"10:00\",\n  \"timezone\": \"Africa/Lagos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/discovery-slots/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "discovery-slots",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "response": []
         },
         {
           "name": "DELETE discovery slot",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 204 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "DELETE",
             "header": [
@@ -5245,23 +5275,21 @@
             },
             "description": "Admin deletes a discovery call slot."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "DELETE discovery slot — not found → 404",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 or 204 or 404', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 204, 404]);",
-                  "});"
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "DELETE discovery slot — not found → 404",
+          ],
           "request": {
             "method": "DELETE",
             "header": [
@@ -5281,18 +5309,7 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -5301,30 +5318,6 @@
       "item": [
         {
           "name": "GET /notifications — list (authenticated)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/notifications",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "notifications"
-              ]
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{client_token}}",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -5337,10 +5330,45 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{client_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/notifications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "response": []
         },
         {
           "name": "GET /notifications — no auth → 401",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -5359,21 +5387,21 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "POST /register/device — android",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5386,65 +5414,26 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/register/device",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "register",
-                "device"
-              ]
-            },
-            "description": "Register Firebase device token for push notifications.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"device_token\": \"fcm-test-token-placeholder\",\n  \"platform\": \"android\"\n}"
-            }
+            },
+            "url": {
+              "raw": "{{base_url}}/register/device",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "register",
+                "device"
+              ]
+            },
+            "description": "Register Firebase device token for push notifications."
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "POST /register/device — iOS",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{client_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/register/device",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "register",
-                "device"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"device_token\": \"apns-test-token-placeholder\",\n  \"platform\": \"ios\"\n}"
-            }
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -5455,10 +5444,49 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"device_token\": \"apns-test-token-placeholder\",\n  \"platform\": \"ios\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/register/device",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "register",
+                "device"
+              ]
+            }
+          },
+          "response": []
         },
         {
           "name": "POST /register/device — invalid platform → 400",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5471,22 +5499,25 @@
                 "value": "application/json"
               }
             ],
-            "url": {
-              "raw": "{{base_url}}/register/device",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "register",
-                "device"
-              ]
-            },
             "body": {
               "mode": "raw",
               "raw": "{\n  \"device_token\": \"fcm-test-token\",\n  \"platform\": \"blackberry\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/register/device",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "register",
+                "device"
+              ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "POST /register/device — missing token → 400",
           "event": [
             {
               "listen": "test",
@@ -5497,10 +5528,7 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "POST /register/device — missing token → 400",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5513,6 +5541,10 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"platform\": \"ios\"\n}"
+            },
             "url": {
               "raw": "{{base_url}}/register/device",
               "host": [
@@ -5522,24 +5554,9 @@
                 "register",
                 "device"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"platform\": \"ios\"\n}"
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -5548,6 +5565,19 @@
       "item": [
         {
           "name": "GET /media — list all (public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -5567,20 +5597,7 @@
             },
             "description": "Public. Lists organisation-level images and videos, paginated."
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "GET /media — paginated",
@@ -5616,6 +5633,19 @@
         },
         {
           "name": "POST /media/images — upload org image (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 202', () => pm.response.to.have.status(202));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) pm.collectionVariables.set('created_media_id', json.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5645,8 +5675,8 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "postman/fixtures/sample.png",
-                  "description": "JPEG/PNG/WebP/HEIC max 5MB"
+                  "description": "JPEG/PNG/WebP/HEIC max 5MB",
+                  "value": ""
                 }
               ]
             },
@@ -5662,23 +5692,21 @@
             },
             "description": "Multipart. Returns 202 immediately; async worker handles MinIO upload."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "POST /media/videos — upload org video (admin)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 202', () => pm.response.to.have.status(202));",
-                  "const json = pm.response.json();",
-                  "if (json.data && json.data.id) pm.collectionVariables.set('created_media_id', json.data.id);"
+                  "pm.test('Status 202', () => pm.response.to.have.status(202));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "POST /media/videos — upload org video (admin)",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5708,8 +5736,8 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "",
-                  "description": "MP4/MOV/WebM max 100MB"
+                  "description": "MP4/MOV/WebM max 100MB",
+                  "value": ""
                 }
               ]
             },
@@ -5725,21 +5753,23 @@
             },
             "description": "Multipart. Returns 202 immediately."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET /media/:id — get by ID",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 202', () => pm.response.to.have.status(202));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET /media/:id — get by ID",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -5759,23 +5789,21 @@
               ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET /media/:id — not found → 404",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));"
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET /media/:id — not found → 404",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -5795,21 +5823,21 @@
               ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "DELETE /media/:id — remove (admin)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
+                  "pm.test('Status 200 or 204', () => pm.expect([200, 204]).to.include(pm.response.code));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "DELETE /media/:id — remove (admin)",
+          ],
           "request": {
             "method": "DELETE",
             "header": [
@@ -5829,18 +5857,7 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200 or 204', () => pm.expect([200, 204]).to.include(pm.response.code));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -5849,6 +5866,19 @@
       "item": [
         {
           "name": "GET /subscriptions/plans — list plans",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has data', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -5869,51 +5899,10 @@
             },
             "description": "Returns available tiers: casual, committed, consistent."
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Has data', () => pm.expect(json.data).to.be.an('array'));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "POST /subscriptions — create via Google IAP",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{client_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/subscriptions",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "subscriptions"
-              ]
-            },
-            "description": "Verifies IAP receipt and activates subscription. 409 if receipt already used.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"plan_id\": \"casual\",\n  \"trainer_id\": \"{{created_trainer_id}}\",\n  \"platform\": \"google\",\n  \"product_id\": \"com.fitcall.casual_monthly\",\n  \"receipt\": \"google-iap-purchase-token-placeholder\"\n}"
-            }
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -5923,13 +5912,12 @@
                   "const json = pm.response.json();",
                   "if (pm.response.code === 201 && json.data && json.data.id) pm.collectionVariables.set('created_subscription_id', json.data.id);"
                 ],
-                "type": "text/javascript"
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
-          ]
-        },
-        {
-          "name": "POST /subscriptions — missing fields → 400",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -5942,6 +5930,10 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": \"casual\",\n  \"trainer_id\": \"{{created_trainer_id}}\",\n  \"platform\": \"google\",\n  \"product_id\": \"com.fitcall.casual_monthly\",\n  \"receipt\": \"google-iap-purchase-token-placeholder\",\n  \"purchase_token\":{{purcahse_token}}\n}"
+            },
             "url": {
               "raw": "{{base_url}}/subscriptions",
               "host": [
@@ -5951,12 +5943,12 @@
                 "subscriptions"
               ]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"plan_id\": \"casual\"\n}"
-            }
+            "description": "Verifies IAP receipt and activates subscription. 409 if receipt already used."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "POST /subscriptions — missing fields → 400",
           "event": [
             {
               "listen": "test",
@@ -5967,10 +5959,48 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": \"casual\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/subscriptions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "subscriptions"
+              ]
+            }
+          },
+          "response": []
         },
         {
           "name": "GET /subscriptions/me — my active subscription",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -5990,7 +6020,10 @@
               ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET /subscriptions/me/usage — sessions used and remaining",
           "event": [
             {
               "listen": "test",
@@ -6001,10 +6034,7 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET /subscriptions/me/usage — sessions used and remaining",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -6025,7 +6055,10 @@
               ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "POST /client/cancel/subscription — cancel",
           "event": [
             {
               "listen": "test",
@@ -6036,10 +6069,7 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "POST /client/cancel/subscription — cancel",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -6052,6 +6082,10 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
             "url": {
               "raw": "{{base_url}}/client/cancel/subscription",
               "host": [
@@ -6063,27 +6097,23 @@
                 "subscription"
               ]
             },
-            "description": "Cancels the authenticated client's active subscription immediately.",
-            "body": {
-              "mode": "raw",
-              "raw": "{}"
-            }
+            "description": "Cancels the authenticated client's active subscription immediately."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET /subscriptions/me — no auth → 401",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET /subscriptions/me — no auth → 401",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -6103,18 +6133,7 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -6123,6 +6142,19 @@
       "item": [
         {
           "name": "GET /trainers/me — own profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -6143,23 +6175,21 @@
             },
             "description": "Returns the authenticated trainer's own full profile."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET /trainers/me — no auth → 401",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));"
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET /trainers/me — no auth → 401",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -6179,21 +6209,23 @@
               ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET /trainers/me/clients — client roster",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET /trainers/me/clients — client roster",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -6215,20 +6247,7 @@
             },
             "description": "Paginated list of clients who have booked with this trainer."
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "GET /trainers/me/clients — paginated",
@@ -6266,35 +6285,6 @@
         },
         {
           "name": "POST /trainers/resend-setup — resend invite (admin)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{admin_token}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/trainers/resend-setup",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "trainers",
-                "resend-setup"
-              ]
-            },
-            "description": "Admin only. Rotates setup token and resends activation email.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"trainer@fitcall-test.com\"\n}"
-            }
-          },
-          "response": [],
           "event": [
             {
               "listen": "test",
@@ -6305,10 +6295,7 @@
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "POST /trainers/resend-setup — unknown email → 404",
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -6321,6 +6308,10 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"trainer@fitcall-test.com\"\n}"
+            },
             "url": {
               "raw": "{{base_url}}/trainers/resend-setup",
               "host": [
@@ -6331,12 +6322,12 @@
                 "resend-setup"
               ]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"notreal@email.com\"\n}"
-            }
+            "description": "Admin only. Rotates setup token and resends activation email."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "POST /trainers/resend-setup — unknown email → 404",
           "event": [
             {
               "listen": "test",
@@ -6347,10 +6338,49 @@
                 "type": "text/javascript"
               }
             }
-          ]
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"notreal@email.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/trainers/resend-setup",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "resend-setup"
+              ]
+            }
+          },
+          "response": []
         },
         {
           "name": "GET /trainers/set-password/validate — valid token check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 400', () => pm.expect([200, 400]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -6378,21 +6408,23 @@
             },
             "description": "Pre-flight check before showing set-password form. 200=valid, 400=expired/invalid."
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "PATCH /trainers/:id — invalid onboarding_status → 400 (fix #228)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 or 400', () => pm.expect([200, 400]).to.include(pm.response.code));"
+                  "pm.test('Status 400 (was 500 before fix #228)', () => pm.response.to.have.status(400));",
+                  "const json = pm.response.json();",
+                  "pm.test('Error mentions onboarding_status', () => pm.expect(json.message.toLowerCase()).to.include('onboarding'));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "PATCH /trainers/:id — invalid onboarding_status → 400 (fix #228)",
+          ],
           "request": {
             "method": "PATCH",
             "header": [
@@ -6405,6 +6437,10 @@
                 "value": "application/json"
               }
             ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"onboarding_status\": \"active\"\n}"
+            },
             "url": {
               "raw": "{{base_url}}/trainers/{{created_trainer_id}}",
               "host": [
@@ -6415,26 +6451,9 @@
                 "{{created_trainer_id}}"
               ]
             },
-            "description": "Regression test: 'active' is not valid (valid: pending, approved, rejected, suspended). Was 500 before fix #228.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"onboarding_status\": \"active\"\n}"
-            }
+            "description": "Regression test: 'active' is not valid (valid: pending, approved, rejected, suspended). Was 500 before fix #228."
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 400 (was 500 before fix #228)', () => pm.response.to.have.status(400));",
-                  "let json; try { json = pm.response.json(); } catch (e) { json = null; }",
-                  "pm.test('Error mentions onboarding_status', () => pm.expect(json.message.toLowerCase()).to.include('onboarding'));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     },
@@ -6443,6 +6462,19 @@
       "item": [
         {
           "name": "GET /admin/clients — list all clients",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -6463,20 +6495,7 @@
             },
             "description": "Super admin only. Paginated list of all client accounts."
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Has data array', () => pm.expect(json.data).to.be.an('array'));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         },
         {
           "name": "GET /admin/clients — paginated",
@@ -6513,6 +6532,19 @@
         },
         {
           "name": "GET /admin/clients/:id — single client",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));",
+                  "const json = pm.response.json();",
+                  "if (pm.response.code === 200) pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -6533,23 +6565,21 @@
               ]
             }
           },
-          "response": [],
+          "response": []
+        },
+        {
+          "name": "GET /admin/clients/:id — not found → 404",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));",
-                  "const json = pm.response.json();",
-                  "if (pm.response.code === 200) pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));"
+                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
                 ],
                 "type": "text/javascript"
               }
             }
-          ]
-        },
-        {
-          "name": "GET /admin/clients/:id — not found → 404",
+          ],
           "request": {
             "method": "GET",
             "header": [
@@ -6570,18 +6600,7 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 404', () => pm.response.to.have.status(404));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
+          "response": []
         }
       ]
     }
