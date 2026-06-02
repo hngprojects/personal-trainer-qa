@@ -1,27 +1,22 @@
 {
-  "name": "personal-trainer-qa",
+  "name": "fitcall-qa",
   "version": "1.0.0",
-  "description": "API regression QA suite for the Personal Trainer (FitCall) staging environment, driven by Postman + Newman.",
+  "description": "",
+  "main": "index.js",
   "scripts": {
-    "test": "pnpm run test:postman",
-    "test:postman": "newman run \"postman/Personal Trainer — Staging.postman_collection.json\" -e postman/staging.postman_environment.json --reporters cli,json --reporter-json-export reports/latest-newman-report.json",
-    "test:postman:cli": "newman run \"postman/Personal Trainer — Staging.postman_collection.json\" -e postman/staging.postman_environment.json",
+    "test": "npm run test:postman",
+    "test:postman": "newman run postman/Personal-Trainer-Staging.postman_collection.json -e postman/staging.postman_environment.json --reporters cli,json --reporter-json-export reports/latest-newman-report.json",
+    "test:postman:cli": "newman run postman/Personal-Trainer-Staging.postman_collection.json -e postman/staging.postman_environment.json",
+    "test:regression": "bash scripts/run-postman-regression.sh",
     "test:env": "node scripts/run.js",
-    "setup": "node scripts/run.js --folder \"0 SETUP\"",
-    "regression": "bash scripts/run-postman-regression.sh"
+    "report": "node scripts/generate-report.js"
   },
-  "keywords": [
-    "qa",
-    "postman",
-    "newman",
-    "regression",
-    "api-testing"
-  ],
+  "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.33.2",
+  "packageManager": "pnpm@10.33.0",
   "devDependencies": {
-    "dotenv": "^17.4.2",
+    "dotenv": "^16.4.5",
     "newman": "^6.2.2"
   }
 }

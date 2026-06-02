@@ -19,4 +19,12 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
-staging.postman_collection.json
+CREDS.txt
+
+node_modules/
+.env
+reports/latest-newman-report.json
+postman/Personal-Trainer-Staging.postman_collection.json
+postman/staging.postman_environment.json
+postman/CREDS.txt
+reports/*-newman-report.json
