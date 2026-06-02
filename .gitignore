@@ -19,4 +19,9 @@ Thumbs.db
 *.log
 npm-debug.log*
 pnpm-debug.log*
-staging.postman_collection.json
+CREDS.txt
+
+# Real credentials — never commit
+postman/CREDS.txt
+# Raw per-run newman artifacts
+reports/*-newman-report.json
