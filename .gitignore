@@ -21,10 +21,7 @@ npm-debug.log*
 pnpm-debug.log*
 CREDS.txt
 
-node_modules/
-.env
-reports/latest-newman-report.json
-postman/Personal-Trainer-Staging.postman_collection.json
-postman/staging.postman_environment.json
+# Real credentials — never commit
 postman/CREDS.txt
+# Raw per-run newman artifacts
 reports/*-newman-report.json

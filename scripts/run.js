@@ -64,12 +64,16 @@ console.log(`▶ Newman run — overriding ${envVar.length} var(s) from .env` +
 
 newman.run(
   {
-    collection: path.join(ROOT, 'postman', 'Personal Trainer — Staging.postman_collection.json'),
+    collection: path.join(ROOT, 'postman', 'Personal-Trainer-Staging.postman_collection.json'),
     environment: path.join(ROOT, 'postman', 'staging.postman_environment.json'),
     envVar,
     folder,
     delayRequest,
     timeoutRequest,
+    // Allow multipart file uploads to read fixtures from the repo (paths are
+    // relative to ROOT, e.g. postman/fixtures/sample.png).
+    workingDir: ROOT,
+    insecureFileRead: true,
     reporters: ['cli', 'json'],
     reporter: { json: { export: path.join(ROOT, 'reports', 'latest-newman-report.json') } },
   },
