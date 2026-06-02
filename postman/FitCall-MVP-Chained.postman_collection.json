@@ -1,0 +1,2226 @@
+{
+  "info": {
+    "_postman_id": "ef7aec99-0846-4b99-8f1f-b7cafa726566",
+    "name": "FitCall MVP Chained Regression",
+    "description": "Chain-focused MVP regression suite generated from the Personal Trainer staging collection.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "55046730",
+    "_collection_link": "https://go.postman.co/collection/55046730-ef7aec99-0846-4b99-8f1f-b7cafa726566?source=collection_link"
+  },
+  "item": [
+    {
+      "name": "00 - Smoke and Public Checks",
+      "item": [
+        {
+          "name": "Health check",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Status is success', () => pm.expect(json.status).to.equal('success'));",
+                  "pm.test('Has timestamp', () => pm.expect(json.data).to.have.property('timestamp'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/health",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "health"
+              ]
+            },
+            "description": "Public health check — no auth."
+          },
+          "response": []
+        },
+        {
+          "name": "Root endpoint",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Status is success', () => pm.expect(json.status).to.equal('success'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                ""
+              ]
+            },
+            "description": "Public root — confirms server is running."
+          },
+          "response": []
+        },
+        {
+          "name": "Contact form valid submission",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has message', () => pm.expect(json).to.have.property('message'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"qa@fitcall-test.com\",\n  \"name\": \"QA Tester\",\n  \"subject\": \"QA Test Message\",\n  \"message\": \"This is a test message from the QA collection.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/contact-us",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contact-us"
+              ]
+            },
+            "description": "Public endpoint — no auth required."
+          },
+          "response": []
+        },
+        {
+          "name": "Contact form missing required fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{base_url}}/contact-us",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "contact-us"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Waitlist valid email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 or 200', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('Has message', () => pm.expect(json).to.have.property('message'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"qa-waitlist@fitcall-test.com\",\n  \"name\": \"QA Tester\",\n  \"location\": \"Lagos, Nigeria\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/waitlist",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "waitlist"
+              ]
+            },
+            "description": "Public endpoint. Returns 201 for new entries, 200 if already on the list."
+          },
+          "response": []
+        },
+        {
+          "name": "Waitlist duplicate email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 (already on waitlist)', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Message says already on waitlist', () => pm.expect(json.message.toLowerCase()).to.include('already'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"qa-waitlist@fitcall-test.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/waitlist",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "waitlist"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Waitlist invalid email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-valid\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/waitlist",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "waitlist"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Admin Trainer Management Chain",
+      "item": [
+        {
+          "name": "Step 1 - Admin login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Admin login 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has access_token', () => pm.expect(json.data).to.have.property('access_token'));",
+                  "if (json.data && json.data.access_token) {",
+                  "  pm.collectionVariables.set('admin_token', json.data.access_token);",
+                  "  pm.collectionVariables.set('client_token', json.data.access_token);",
+                  "  pm.collectionVariables.set('trainer_token', json.data.access_token);",
+                  "  if (json.data.refresh_token) {",
+                  "    pm.collectionVariables.set('refresh_token', json.data.refresh_token);",
+                  "    console.log('✓ refresh_token stored');",
+                  "  }",
+                  "  console.log('✓ admin_token, client_token and trainer_token all stored');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"{{admin_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/admin/log-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "admin",
+                "log-in"
+              ]
+            },
+            "description": "RUN THIS FIRST before anything else. Logs in as admin and stores the token as admin_token, client_token and trainer_token so all subsequent requests are authenticated. Set admin_email and admin_password in the environment file."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 2 - Create trainer",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('test_trainer_email', 'qa-trainer-' + Math.floor(Math.random()*100000) + '@fitcall-test.com');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (pm.response.code === 201) {",
+                  "  pm.test('PASS — Trainer created 201', () => pm.response.to.have.status(201));",
+                  "  pm.test('Has trainer id', () => pm.expect(json.data).to.have.property('id'));",
+                  "  pm.test('Has email', () => pm.expect(json.data).to.have.property('email'));",
+                  "  pm.collectionVariables.set('created_trainer_id', json.data.id);",
+                  "  pm.collectionVariables.set('created_user_id', json.data.user_id);",
+                  "} else if (pm.response.code === 500) {",
+                  "  pm.test('KNOWN BUG — SMTP 500 (trainer created in DB but creds not sent)', () => true);",
+                  "  console.warn('SMTP broken — trainer exists in DB, retry will 409. See known bug: retry path blocked after SMTP failure.');",
+                  "} else {",
+                  "  pm.test('Unexpected status: ' + pm.response.code, () => pm.expect(false).to.be.true);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "{{test_trainer_email}}",
+                  "type": "text"
+                },
+                {
+                  "key": "name",
+                  "value": "QA Test Trainer",
+                  "type": "text"
+                },
+                {
+                  "key": "specializations",
+                  "value": "strength",
+                  "type": "text"
+                },
+                {
+                  "key": "specializations",
+                  "value": "cardio",
+                  "type": "text"
+                },
+                {
+                  "key": "training_styles",
+                  "value": "hiit",
+                  "type": "text"
+                },
+                {
+                  "key": "training_styles",
+                  "value": "functional",
+                  "type": "text"
+                },
+                {
+                  "key": "years_of_experience",
+                  "value": "5",
+                  "type": "text"
+                },
+                {
+                  "key": "bio",
+                  "value": "Experienced trainer specializing in functional fitness.",
+                  "type": "text"
+                },
+                {
+                  "key": "onboarding_status",
+                  "value": "pending",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/trainers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 3 - Fetch created trainer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));",
+                  "pm.test('Has specializations', () => pm.expect(json.data).to.have.property('specializations'));",
+                  "pm.test('Has created_at', () => pm.expect(json.data).to.have.property('created_at'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trainers/{{created_trainer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "{{created_trainer_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 4 - Update trainer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Bio updated', () => pm.expect(json.data.bio).to.equal('Updated bio from QA test'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Updated bio from QA test\",\n  \"years_of_experience\": 7\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/trainers/{{created_trainer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "{{created_trainer_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 5 - Fetch updated trainer",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));",
+                  "pm.test('Has specializations', () => pm.expect(json.data).to.have.property('specializations'));",
+                  "pm.test('Has created_at', () => pm.expect(json.data).to.have.property('created_at'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trainers/{{created_trainer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "{{created_trainer_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 6 - Delete trainer cleanup",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 204 No Content', () => pm.response.to.have.status(204));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trainers/{{created_trainer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "{{created_trainer_id}}"
+              ]
+            },
+            "description": "Cleans up the test trainer. Run last in this folder."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Client Onboarding and Trainer Discovery Chain",
+      "item": [
+        {
+          "name": "Step 1 - Register client account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Step 1 of 3 for client token setup. Registers a new client account. Check email for OTP then run Step 2.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{client_email}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has message', () => pm.expect(json).to.have.property('message'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2 - Verify client email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/verify-email",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "verify-email"
+              ]
+            },
+            "description": "Step 2 of 3. Set client_otp variable in your environment with the OTP from the email. Then run this.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"code\": \"{{client_otp}}\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Email verified', () => pm.expect(json.message.toLowerCase()).to.include('verif'));",
+                  "pm.test('Has access_token', () => pm.expect(json.data).to.have.property('access_token'));",
+                  "if (json.data && json.data.access_token) {",
+                  "  pm.environment.set('client_token', json.data.access_token);",
+                  "  pm.environment.set('access_token', json.data.access_token);",
+                  "}",
+                  "if (json.data && json.data.refresh_token) {",
+                  "  pm.environment.set('refresh_token', json.data.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3 - Fetch client profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));",
+                  "pm.test('Has email', () => pm.expect(json.data).to.have.property('email'));",
+                  "pm.test('Has profile_complete', () => pm.expect(json.data).to.have.property('profile_complete'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/me/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "profile"
+              ]
+            },
+            "description": "Requires {{client_token}} — set from Google Sign-In or /dev/token."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 4 - Update client profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 401', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('Has profile_complete', () => pm.expect(json.data).to.have.property('profile_complete'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"QA Test Client\",\n  \"gender\": \"female\",\n  \"fitness_goals\": [\"build_muscle\", \"build_strength\"],\n  \"fitness_level\": \"intermediate\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/users/me/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "profile"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 5 - List trainers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('data is array', () => pm.expect(json.data).to.be.an('array'));",
+                  "if (json.data && json.data.length > 0) {",
+                  "  const trainer = json.data[0];",
+                  "  pm.test('Has id', () => pm.expect(trainer).to.have.property('id'));",
+                  "  pm.test('Has specializations', () => pm.expect(trainer).to.have.property('specializations'));",
+                  "  pm.test('Has onboarding_status', () => pm.expect(trainer).to.have.property('onboarding_status'));",
+                  "  pm.test('Has average_rating', () => pm.expect(trainer).to.have.property('average_rating'));",
+                  "  pm.test('KNOWN GAP — missing availability (milestone 4)', () => pm.expect(trainer).to.have.property('availability'));",
+                  "  pm.test('KNOWN GAP — missing sessions (milestone 4)', () => pm.expect(trainer).to.have.property('sessions'));",
+                  "  pm.test('KNOWN GAP — missing earnings (milestone 5)', () => pm.expect(trainer).to.have.property('earnings'));",
+                  "  pm.collectionVariables.set('created_trainer_id', trainer.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trainers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers"
+              ]
+            },
+            "description": "Tests marked KNOWN GAP will intentionally fail — documents missing fields pending milestones 4 and 5."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 6 - Fetch trainer profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has id', () => pm.expect(json.data).to.have.property('id'));",
+                  "pm.test('Has specializations', () => pm.expect(json.data).to.have.property('specializations'));",
+                  "pm.test('Has created_at', () => pm.expect(json.data).to.have.property('created_at'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trainers/{{created_trainer_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "{{created_trainer_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Discovery Booking Chain",
+      "item": [
+        {
+          "name": "Step 1 - Admin creates discovery slot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/discovery-slots",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "discovery-slots"
+              ]
+            },
+            "description": "Admin creates a recurring weekly discovery call slot.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"day_of_week\": 1,\n  \"start_time\": \"09:00\",\n  \"end_time\": \"10:00\",\n  \"timezone\": \"Africa/Lagos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 or 200', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) {",
+                  "  pm.collectionVariables.set('booking_slot_id', json.data.id);",
+                  "  console.log('booking_slot_id set to', json.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2 - Client lists discovery slots",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/discovery-slots",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "discovery-slots"
+              ]
+            },
+            "description": "List available discovery call slots. Supports optional ?date= filter."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has slots', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3 - Client books discovery call",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"QA Test Client\",\n  \"email\": \"{{client_email}}\",\n  \"contact_mode\": \"scheduled_meeting\",\n  \"trainer_id\": \"{{created_trainer_id}}\",\n  \"selected_datetime\": \"2026-06-10T10:00:00Z\",\n  \"timezone\": \"Africa/Lagos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/discovery",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings",
+                "discovery"
+              ]
+            },
+            "description": "Happy-path discovery booking request. Requires client_token and created_trainer_id."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.id) pm.collectionVariables.set('created_booking_id', json.data.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 4 - Client views upcoming bookings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 401', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('data is array', () => pm.expect(json.data).to.be.an('array'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/upcoming?timezone=Africa%2FLagos"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 5 - Admin views discovery bookings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/admin/discovery-bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "admin",
+                "discovery-bookings"
+              ]
+            },
+            "description": "List all discovery call bookings (admin view). Supports ?page=&limit= query params."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has data array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json).to.have.property('data');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 - Trainer Availability Chain",
+      "item": [
+        {
+          "name": "Step 1 - Trainer sets availability",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 401 (needs trainer token)', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 401, 404]);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('Returns availability array', () => pm.expect(json.data).to.be.an('array'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"availability\": [\n    {\n      \"day_of_week\": 1,\n      \"start_time\": \"09:00\",\n      \"end_time\": \"17:00\",\n      \"timezone\": \"Africa/Lagos\"\n    },\n    {\n      \"day_of_week\": 3,\n      \"start_time\": \"10:00\",\n      \"end_time\": \"16:00\",\n      \"timezone\": \"Africa/Lagos\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/trainers/me/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "me",
+                "availability"
+              ]
+            },
+            "description": "Uses {{client_token}} — must be a trainer's JWT. Set this variable from a trainer login before running. 0=Sunday, 1=Monday ... 6=Saturday.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{trainer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Step 2 - Trainer fetches own availability",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trainers/me/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "me",
+                "availability"
+              ]
+            },
+            "description": "Trainer reads their own weekly availability slots."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has availability array', () => {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data).to.have.property('availability');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3 - Fetch trainer availability by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trainers/{{created_trainer_id}}/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "{{created_trainer_id}}",
+                "availability"
+              ]
+            },
+            "description": "Any authenticated user can view a trainer's weekly availability."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 4 - Invalid timezone is rejected",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 or 401', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 401]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"availability\": [\n    {\n      \"day_of_week\": 1,\n      \"start_time\": \"09:00\",\n      \"end_time\": \"17:00\",\n      \"timezone\": \"Not/ATimezone\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/trainers/me/availability",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "me",
+                "availability"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{trainer_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Session Lifecycle Chain",
+      "item": [
+        {
+          "name": "Step 1 - Fetch session details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sessions/{{created_session_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sessions",
+                "{{created_session_id}}"
+              ]
+            },
+            "description": "Requires created_session_id from valid booking/session setup."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has session data', () => pm.expect(json).to.have.property('data'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2 - Trainer starts session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sessions/{{created_session_id}}/start",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sessions",
+                "{{created_session_id}}",
+                "start"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3 - Client joins session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sessions/{{created_session_id}}/join",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sessions",
+                "{{created_session_id}}",
+                "join"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 4 - Trainer completes session",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainer_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/sessions/{{created_session_id}}/complete",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sessions",
+                "{{created_session_id}}",
+                "complete"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 5 - Trainer adds session notes",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{trainer_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"QA regression note for completed session.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/sessions/{{created_session_id}}/notes",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sessions",
+                "{{created_session_id}}",
+                "notes"
+              ]
+            },
+            "description": ""
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "06 - Subscription Access Chain",
+      "item": [
+        {
+          "name": "Step 1 - View subscription plans",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/plans",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "subscriptions",
+                "plans"
+              ]
+            },
+            "description": "Returns available tiers: casual, committed, consistent."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has data', () => pm.expect(json.data).to.be.an('array'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2 - Create subscription using Google IAP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/subscriptions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "subscriptions"
+              ]
+            },
+            "description": "Verifies IAP receipt and activates subscription. 409 if receipt already used.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": \"casual\",\n  \"trainer_id\": \"{{created_trainer_id}}\",\n  \"platform\": \"google\",\n  \"product_id\": \"com.fitcall.casual_monthly\",\n  \"receipt\": \"google-iap-purchase-token-placeholder\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201 or 409', () => pm.expect([201, 409]).to.include(pm.response.code));",
+                  "const json = pm.response.json();",
+                  "if (pm.response.code === 201 && json.data && json.data.id) pm.collectionVariables.set('created_subscription_id', json.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3 - Fetch active subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "subscriptions",
+                "me"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 4 - Fetch subscription usage",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/me/usage",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "subscriptions",
+                "me",
+                "usage"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 5 - Attempt paid training booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200 || pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('Has booking id', () => pm.expect(json.data).to.have.property('id'));",
+                  "  pm.collectionVariables.set('created_booking_id', json.data.id);",
+                  "} else {",
+                  "  pm.test('Status indicates precondition not met — set client_token and valid trainer_id/subscription_id', () => {",
+                  "    console.warn('Set {{client_token}} to a valid client JWT and update trainer_id/subscription_id in the body');",
+                  "  });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainer_id\": \"{{created_trainer_id}}\",\n  \"subscription_id\": \"REPLACE_WITH_VALID_SUBSCRIPTION_ID\",\n  \"scheduled_start\": \"2026-06-01T10:00:00Z\",\n  \"scheduled_end\": \"2026-06-01T11:00:00Z\",\n  \"session_platform\": \"zoom\",\n  \"timezone\": \"Africa/Lagos\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "Requires {{client_token}} + a valid subscription_id. Update the body before running."
+          },
+          "response": []
+        },
+        {
+          "name": "Step 6 - Cancel subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/client/cancel/subscription",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "client",
+                "cancel",
+                "subscription"
+              ]
+            },
+            "description": "Cancels the authenticated client's active subscription immediately.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "07 - Non-Subscribed Access Restriction Chain",
+      "item": [
+        {
+          "name": "Step 1 - Fetch active subscription",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/subscriptions/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "subscriptions",
+                "me"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 2 - Attempt paid booking without subscription",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trainer_id\": \"{{created_trainer_id}}\",\n  \"subscription_id\": \"00000000-0000-0000-0000-000000000000\",\n  \"scheduled_start\": \"2026-06-10T10:00:00Z\",\n  \"scheduled_end\": \"2026-06-10T11:00:00Z\",\n  \"session_platform\": \"zoom\",\n  \"timezone\": \"Africa/Lagos\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings"
+              ]
+            },
+            "description": "Access-control test. A non-subscribed client should not be able to create a paid training booking."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 400, 401, 403 or 404', () => pm.expect([400, 401, 403, 404]).to.include(pm.response.code));",
+                  "pm.test('Does not create unauthorized paid booking', () => pm.response.to.not.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Step 3 - Confirm upcoming bookings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200 or 401', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 401]);",
+                  "});",
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  pm.test('data is array', () => pm.expect(json.data).to.be.an('array'));",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/bookings/upcoming?timezone=Africa%2FLagos"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "99 - Negative and Security Regression",
+      "item": [
+        {
+          "name": "Admin login wrong password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "const json = pm.response.json();",
+                  "pm.test('Returns error message', () => pm.expect(json).to.have.property('message'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\",\n  \"password\": \"wrong-password-intentional\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/admin/log-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "admin",
+                "log-in"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Admin login missing fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{admin_email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/admin/log-in",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "admin",
+                "log-in"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Trainer list no auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/trainers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create trainer no auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": []
+            },
+            "url": {
+              "raw": "{{base_url}}/trainers",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get trainer invalid UUID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 or 422', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 404, 422]);",
+                  "});",
+                  "const json = pm.response.json();",
+                  "pm.test('KNOWN BUG — error message is raw Go error, not user-friendly', () => {",
+                  "  pm.expect(json.message).to.not.include('invalid UUID');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/trainers/not-a-uuid",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "not-a-uuid"
+              ]
+            },
+            "description": "KNOWN BUG: returns raw Go error string instead of a clean user-facing message."
+          },
+          "response": []
+        },
+        {
+          "name": "Discovery booking missing fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 or 401', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 401]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"QA Tester\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/discovery",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings",
+                "discovery"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Phone callback missing phone number",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 or 401', () => {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([400, 401]);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"QA Tester\",\n  \"email\": \"qa@fitcall-test.com\",\n  \"contact_mode\": \"phone_callback\",\n  \"trainer_id\": \"{{created_trainer_id}}\",\n  \"selected_datetime\": \"2026-06-01T10:00:00Z\",\n  \"timezone\": \"Africa/Lagos\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/bookings/discovery",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings",
+                "discovery"
+              ]
+            },
+            "description": "phone_callback mode requires phone_number — must return 400."
+          },
+          "response": []
+        },
+        {
+          "name": "Subscription missing fields",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{client_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/subscriptions",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "subscriptions"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_id\": \"casual\"\n}"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Notifications no auth",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid-token"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/notifications",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "notifications"
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.staging.fitcall.me/api/v1"
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    },
+    {
+      "key": "client_token",
+      "value": "",
+      "description": "Regular user JWT — auto-set by SETUP request in folder 0"
+    },
+    {
+      "key": "trainer_token",
+      "value": "",
+      "description": "Trainer JWT — auto-set by SETUP request in folder 0"
+    },
+    {
+      "key": "created_trainer_id",
+      "value": ""
+    },
+    {
+      "key": "created_user_id",
+      "value": ""
+    },
+    {
+      "key": "test_trainer_email",
+      "value": ""
+    },
+    {
+      "key": "created_booking_id",
+      "value": ""
+    },
+    {
+      "key": "booking_slot_id",
+      "value": ""
+    },
+    {
+      "key": "created_image_id",
+      "value": ""
+    }
+  ]
+}

@@ -4,19 +4,49 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm run test:postman",
-    "test:postman": "newman run postman/Personal-Trainer-Staging.postman_collection.json -e postman/staging.postman_environment.json --reporters cli,json --reporter-json-export reports/latest-newman-report.json",
-    "test:postman:cli": "newman run postman/Personal-Trainer-Staging.postman_collection.json -e postman/staging.postman_environment.json",
-    "test:regression": "bash scripts/run-postman-regression.sh",
-    "test:env": "node scripts/run.js",
-    "report": "node scripts/generate-report.js"
+    "test": "pnpm test:regression",
+
+    "test:regression": "tsx scripts/run-newman.ts full latest-newman-report source",
+    "test:folder": "tsx scripts/run-newman.ts folder",
+
+    "test:smoke": "tsx scripts/run-newman.ts folder \"15 — Health & Root\" smoke-newman-report source",
+    "test:auth": "tsx scripts/run-newman.ts folder \"0 — Auth\" auth-newman-report source",
+    "test:trainers": "tsx scripts/run-newman.ts folder \"1 — GET /trainers\" trainers-newman-report source",
+    "test:create-trainer": "tsx scripts/run-newman.ts folder \"2 — POST /trainers (Create Trainer)\" create-trainer-newman-report source",
+    "test:trainer-profile": "tsx scripts/run-newman.ts folder \"3 — GET /trainers/:id\" trainer-profile-newman-report source",
+    "test:bookings": "tsx scripts/run-newman.ts folder \"8 — Bookings\" bookings-newman-report source",
+    "test:sessions": "tsx scripts/run-newman.ts folder \"10 — Sessions\" sessions-newman-report source",
+    "test:admin": "tsx scripts/run-newman.ts folder \"12 — Admin\" admin-newman-report source",
+    "test:subscriptions": "tsx scripts/run-newman.ts folder \"22 — Subscriptions\" subscriptions-newman-report source",
+
+    "test:chain": "tsx scripts/run-newman.ts full chain-newman-report chain",
+    "test:chain:smoke": "tsx scripts/run-newman.ts folder \"00 - Smoke and Public Checks\" chain-smoke-newman-report chain",
+    "test:chain:admin-trainer": "tsx scripts/run-newman.ts folder \"01 - Admin Trainer Management Chain\" chain-admin-trainer-newman-report chain",
+    "test:chain:client-discovery": "tsx scripts/run-newman.ts folder \"02 - Client Onboarding and Trainer Discovery Chain\" chain-client-discovery-newman-report chain",
+    "test:chain:discovery-booking": "tsx scripts/run-newman.ts folder \"03 - Discovery Booking Chain\" chain-discovery-booking-newman-report chain",
+    "test:chain:trainer-availability": "tsx scripts/run-newman.ts folder \"04 - Trainer Availability Chain\" chain-trainer-availability-newman-report chain",
+    "test:chain:session": "tsx scripts/run-newman.ts folder \"05 - Session Lifecycle Chain\" chain-session-newman-report chain",
+    "test:chain:subscription": "tsx scripts/run-newman.ts folder \"06 - Subscription Access Chain\" chain-subscription-newman-report chain",
+    "test:chain:non-subscribed": "tsx scripts/run-newman.ts folder \"07 - Non-Subscribed Access Restriction Chain\" chain-non-subscribed-newman-report chain",
+    "test:chain:negative": "tsx scripts/run-newman.ts folder \"99 - Negative and Security Regression\" chain-negative-newman-report chain",
+
+    "build:chain-collection": "tsx scripts/generate-chain-collection.ts",
+
+    "summarize:report": "tsx scripts/summarize-newman-report.ts",
+    "aggregate:reports": "tsx scripts/aggregate-newman-summaries.ts",
+    "triage:reports": "tsx scripts/triage-newman-failures.ts",
+
+    "report:all": "tsx scripts/run-and-report.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.33.0",
   "devDependencies": {
-    "dotenv": "^16.4.5",
-    "newman": "^6.2.2"
+    "@types/newman": "^5.3.6",
+    "@types/node": "^25.9.1",
+    "newman": "^6.2.2",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
   }
 }
