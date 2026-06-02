@@ -1,119 +1,90 @@
-# FitCall MVP Coverage Summary
+# MVP Coverage Summary
 
-Product: FitCall.me
-Team: Personal Trainer
-Environment: Staging
-Base URL: https://api.staging.fitcall.me/api/v1
+The FitCall MVP regression suite was structured around the milestone documents as the source of truth.
 
-## Purpose
+The covered MVP areas are:
 
-This document summarizes MVP regression coverage for the final QA check-in.
+Authentication and accounts
+Trainer management
+Client profile management
+Trainer discovery
+Discovery call booking
+Booking and session management
+Admin dashboard and monitoring
+Notifications
+Subscription and payment validation where available
 
-It confirms which milestones, features, API flows, and user journeys are covered by the regression suite, and which areas are blocked by unavailable credentials, setup, or test data.
+Milestone coverage:
 
-## MVP Coverage Position
+Milestone	Scope	Coverage Status	Notes
+M1	Authentication and trainer supply	Partial	Auth and trainer provisioning tests are defined. Full execution depends on valid staging credentials.
+M2	Trainer discovery and profile	Partial	Trainer list, profile, filters, media, and admin trainer management are mapped. Full execution depends on valid tokens and trainer data.
+M3	Booking and discovery call	Partial	Discovery slots, booking, reschedule, cancel, and confirmation flows are mapped. Full execution depends on client token and booking data.
+M4	Session lifecycle and notifications	Partial	Session start, join, complete, notes, trainer sessions, admin monitoring, and notifications are mapped. Full execution depends on valid session data.
+M5	Subscription and payment conversion	Blocked / Partial	Subscription plan, validation, and access-control checks are mapped. Payment activation is blocked because payment setup or test receipt is not available.
+Automation Execution Summary
 
-The FitCall MVP regression suite is structured around the milestone documents as the source of truth.
+Automation was executed using the TypeScript Newman runner.
 
-The main MVP areas covered are:
+Primary command:
 
-- Authentication and accounts
-- Trainer management
-- Client profile management
-- Trainer discovery
-- Discovery call booking
-- Booking and session management
-- Admin dashboard and monitoring
-- Notifications
-- Subscription and payment validation where available
+pnpm test:chains:with-summaries
 
-## Milestone Coverage Summary
+This command:
 
-| Milestone | Scope | Coverage Status | Notes |
-|---|---|---|---|
-| M1 | Authentication and trainer supply | Partial | API routes and tests are defined. Full execution needs admin, client, and trainer credentials. |
-| M2 | Trainer discovery and profile | Partial | Trainer list, profile, filters, media, and admin trainer management are mapped. Full execution needs valid token and trainer data. |
-| M3 | Booking and discovery call | Partial | Booking, discovery slots, booking slots, reschedule, cancel, and confirmation checks are mapped. Full execution needs client token and valid booking data. |
-| M4 | Session lifecycle and notifications | Partial | Session start, join, complete, notes, admin monitoring, trainer sessions, and notifications are mapped. Full execution needs valid booking and session data. |
-| M5 | Subscription and payment conversion | Blocked / Partial | Plan listing, validation, and access-control checks are mapped. Full payment activation is blocked because subscription/payment setup is not available yet. |
+Runs all focused chained regression tests.
+Continues execution even if one chain fails.
+Generates individual Newman summary files.
+Generates a consolidated execution summary.
+Generates a failure triage report.
 
-## Major MVP Flow Coverage
+Execution totals:
 
-| Flow ID | MVP Flow | Coverage Status | Automation Method | Notes |
-|---|---|---|---|---|
-| FLOW-001 | Admin login, create trainer, fetch trainer, update trainer, delete trainer | Partial | Postman/Newman | Needs admin credentials. |
-| FLOW-002 | Client register, verify email, login/profile, view trainers, view trainer profile | Partial | Postman/Newman | Needs client account and OTP. |
-| FLOW-003 | Admin creates discovery slot, client views slot, client books discovery call, admin views booking | Partial | Postman/Newman | Needs admin and client tokens. |
-| FLOW-004 | Client books discovery call, booking appears in upcoming bookings, admin monitors booking | Partial | Postman/Newman | Needs valid booking data. |
-| FLOW-005 | Trainer sets availability, client views slots, client books session | Blocked / Partial | Postman/Newman | Needs trainer token and subscription setup. |
-| FLOW-006 | Booking created, session fetched, trainer starts session, client joins, trainer completes session | Blocked / Partial | Postman/Newman | Needs valid session record. |
-| FLOW-007 | Completed session, subscription prompt, plan viewed, payment attempted, subscription checked | Blocked / Partial | Postman/Newman and manual verification | Payment setup is not available yet. |
-| FLOW-008 | Non-subscribed client attempts paid booking and is denied | Partial | Postman/Newman | Needs non-subscribed client token. |
-| FLOW-009 | Admin views sessions and monitors lifecycle status | Partial | Postman/Newman | Needs admin token and session data. |
-| FLOW-010 | User views notifications and registers device token | Partial | Postman/Newman | Needs valid role token. |
+Metric	Count
+Requests Total	279
+Requests Failed	10
+Assertions Total	414
+Assertions Failed	114
+Failure Records	126
 
-## API Coverage Summary
+Failure triage summary:
 
-| Area | Coverage Status | Notes |
-|---|---|---|
-| Health and root | Ready | Public API availability checks can run without credentials. |
-| Auth | Partial | Negative auth tests can run. Full role auth needs valid credentials. |
-| Trainers | Partial | Trainer CRUD and discovery tests are defined. Admin token and trainer ID are required. |
-| Users/Profile | Partial | Client profile tests require valid client token. |
-| Booking slots | Partial | Public list can run. Admin create/update/delete requires admin token. |
-| Discovery slots | Partial | Requires client/admin token depending on endpoint. |
-| Bookings | Partial | Discovery booking requires client token. Paid booking requires subscription data. |
-| Sessions | Blocked / Partial | Session lifecycle requires valid session ID and role tokens. |
-| Admin | Partial | Requires admin token. |
-| Notifications | Partial | Requires valid token. |
-| Media | Partial | Some tests require files and admin token. |
-| Reviews | Partial | Requires valid booking for create review. Public trainer reviews can be tested if trainer ID exists. |
-| Subscriptions | Blocked / Partial | Plan listing and validations can be tested. Payment activation is blocked. |
-| Contact | Ready | Public contact endpoint can be tested. |
-| Waitlist | Partial | Public waitlist add can run. Admin waitlist list requires admin token. |
+Classification	Count
+Blocked - credentials or role token needed	21
+Blocked - staging rate limit	2
+Review - possible assertion mismatch or product bug	17
+Review	9
+Important Execution Interpretation
 
-## Manual Verification Coverage
+The regression suite and automation runner are working.
 
-Some MVP areas require manual verification because they involve frontend, mobile, email, notifications, or third-party integrations.
+The failed assertions are not all product defects. Several are caused by missing staging credentials, missing role-specific tokens, missing OTP access, missing seeded booking/session data, unavailable payment setup, or staging rate limiting.
 
-| Area | Manual Verification Needed | Reason |
-|---|---|---|
-| Mobile trainer list screen | Yes | API tests prove data, but mobile UI must confirm display and navigation. |
-| Mobile trainer profile screen | Yes | API tests prove data, but mobile UI must confirm profile details and video behavior. |
-| Discovery booking UI | Yes | API can validate booking request, but UI flow must confirm date/time selection and confirmation screen. |
-| Session start and end screens | Yes | API can validate lifecycle endpoints, but UI must confirm screen behavior and meeting link visibility. |
-| Trainer dashboard | Yes | API can validate trainer sessions, but portal UI must confirm visibility and actions. |
-| Admin dashboard | Yes | API can validate admin session endpoints, but UI must confirm dashboard display and filtering. |
-| Email confirmations | Yes | Requires access to test inbox or email logs. |
-| Notifications | Yes | Push/email behavior needs device or notification service verification. |
-| Google Pay/payment flow | Yes | Requires test payment setup or sandbox receipt. |
+A failure is only treated as a product bug if:
 
-## Blockers Affecting Full MVP Validation
+Valid credentials were used.
+The correct role token was used.
+Required seed data was available.
+The environment setup was correct.
+The API still behaved incorrectly.
+Chained API Coverage
 
-| Blocker ID | Area | Impact | Required Resolution | Status |
-|---|---|---|---|---|
-| BLK-001 | Credentials | Full role-based regression cannot run. | Provide real staging admin, client, and trainer credentials or tokens. | Open |
-| BLK-002 | Client OTP | Client registration flow cannot be completed automatically. | Provide OTP access or test email inbox. | Open |
-| BLK-003 | Trainer setup | Trainer first-time login and trainer-only endpoints cannot be fully validated. | Provide trainer account or setup token. | Open |
-| BLK-004 | Booking/session data | Full session lifecycle cannot be validated. | Provide or create valid booking/session records. | Open |
-| BLK-005 | Subscription/payment | M5 happy-path payment activation cannot be validated. | Provide payment test setup, test receipt, or seeded subscribed client. | Open |
-| BLK-006 | Mobile app access | UI flows cannot be manually confirmed. | Provide app build, emulator access, or demo walkthrough. | Open |
+The chain-focused Postman collection covers these MVP flows:
 
-## Coverage Conclusion
-
-The FitCall QA regression suite is structured to cover the full MVP across M1 to M5.
-
-Current coverage is strongest at the documentation, API mapping, and automation structure level.
-
-Full execution is currently limited by missing staging credentials, role-specific tokens, seeded booking/session data, and unavailable subscription/payment setup.
-
-The final submission should therefore present:
-
-- Automated API regression through Postman/Newman.
-- A complete route inventory.
-- A regression coverage matrix.
-- A traceability matrix.
-- A test execution report.
-- A bug report log.
-- This MVP coverage summary.
-- A clear blocker section for anything that cannot be executed before submission.
+Chain ID	Chain Name	Status
+CHAIN-001	Admin trainer management	Partial / blocked until valid admin credentials are available
+CHAIN-002	Client onboarding and trainer discovery	Partial / blocked until client OTP or client token is available
+CHAIN-003	Discovery booking	Partial / blocked until admin and client tokens are available
+CHAIN-004	Trainer availability	Partial / blocked until trainer token is available
+CHAIN-005	Session lifecycle	Partial / blocked until valid booking and session data are available
+CHAIN-006	Subscription access	Blocked until payment setup, test receipt, or subscribed client data is available
+CHAIN-007	Non-subscribed access restriction	Partial / blocked until non-subscribed client token is available
+Current Known Blockers
+Blocker ID	Area	Impact	Required Resolution	Status
+BLK-001	Credentials	Full role-based regression cannot run.	Provide real staging admin, client, and trainer credentials or tokens.	Open
+BLK-002	Client OTP	Client verification flow cannot be completed automatically.	Provide OTP access or test email inbox.	Open
+BLK-003	Trainer setup	Trainer first-time login and trainer-only endpoints cannot be fully validated.	Provide trainer account or setup token.	Open
+BLK-004	Booking/session data	Full session lifecycle cannot be validated.	Provide or create valid booking/session records.	Open
+BLK-005	Subscription/payment	M5 happy-path payment activation cannot be validated.	Provide payment test setup, test receipt, or seeded subscribed client.	Open
+BLK-006	Mobile app access	UI flows cannot be manually confirmed.	Provide app build, emulator access, or demo walkthrough.	Open
+BLK-007	Staging rate limiting	Some full or repeated runs return 429.	Use focused chain runs, request delay, or confirm staging rate-limit policy.	Open
