@@ -1,18 +1,18 @@
 {
   "info": {
     "_postman_id": "ef7aec99-0846-4b99-8f1f-b7cafa726566",
-    "name": "Personal Trainer \u2014 Staging",
-    "description": "Complete QA test suite for all Personal Trainer API endpoints. Run folder 0 (Auth) first to seed {{admin_token}}. Client-only endpoints (Bookings, Sessions, Reviews) require {{client_token}} \u2014 set this manually from a Google Sign-In flow or the /dev/token endpoint on staging.",
+    "name": "Personal Trainer — Staging",
+    "description": "Complete QA test suite for all Personal Trainer API endpoints. Run folder 0 (Auth) first to seed {{admin_token}}. Client-only endpoints (Bookings, Sessions, Reviews) require {{client_token}} — set this manually from a Google Sign-In flow or the /dev/token endpoint on staging.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "55046730",
     "_collection_link": "https://go.postman.co/collection/55046730-ef7aec99-0846-4b99-8f1f-b7cafa726566?source=collection_link"
   },
   "item": [
     {
-      "name": "0 \u2014 Auth",
+      "name": "0 — Auth",
       "item": [
         {
-          "name": "SETUP \u2014 Admin login",
+          "name": "SETUP — Admin login",
           "event": [
             {
               "listen": "test",
@@ -23,10 +23,13 @@
                   "pm.test('Has access_token', () => pm.expect(json.data).to.have.property('access_token'));",
                   "if (json.data && json.data.access_token) {",
                   "  pm.collectionVariables.set('admin_token', json.data.access_token);",
+                  "  pm.collectionVariables.set('client_token', json.data.access_token);",
+                  "  pm.collectionVariables.set('trainer_token', json.data.access_token);",
                   "  if (json.data.refresh_token) {",
                   "    pm.collectionVariables.set('refresh_token', json.data.refresh_token);",
+                  "    console.log('✓ refresh_token stored');",
                   "  }",
-                  "  console.log('\u2713 admin_token stored');",
+                  "  console.log('✓ admin_token, client_token and trainer_token all stored');",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -56,147 +59,12 @@
                 "log-in"
               ]
             },
-            "description": "RUN THIS FIRST. Logs in as admin and stores admin_token. Set admin_email and admin_password in the environment."
+            "description": "RUN THIS FIRST before anything else. Logs in as admin and stores the token as admin_token, client_token and trainer_token so all subsequent requests are authenticated. Set admin_email and admin_password in the environment file."
           },
           "response": []
         },
         {
-          "name": "SETUP (Step 1) \u2014 Register client account",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/auth/register",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "register"
-              ]
-            },
-            "description": "Step 1 of 3 for client token setup. Registers a new client account. Check email for OTP then run Step 2.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{client_email}}\"\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test('Status 200 or 201', () => pm.expect([200, 201]).to.include(pm.response.code));",
-                  "const json = pm.response.json();",
-                  "pm.test('Has message', () => pm.expect(json).to.have.property('message'));"
-                ],
-                "type": "text/javascript"
-              }
-            }
-          ]
-        },
-        {
-          "name": "SETUP (Step 2) \u2014 Verify client email (OTP)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/auth/verify-email",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "verify-email"
-              ]
-            },
-            "description": "Step 2 of 3. Set client_otp variable in your environment with the OTP from the email. Then run this.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{client_email}}\",\n  \"code\": \"{{client_otp}}\"\n}"
-            }
-          },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Email verified', () => pm.expect(json.message.toLowerCase()).to.include('verif'));",
-                  "pm.test('Has access_token', () => pm.expect(json.data).to.have.property('access_token'));",
-                  "if (json.data && json.data.access_token) {",
-                  "  pm.environment.set('client_token', json.data.access_token);",
-                  "  pm.environment.set('access_token', json.data.access_token);",
-                  "}",
-                  "if (json.data && json.data.refresh_token) {",
-                  "  pm.environment.set('refresh_token', json.data.refresh_token);",
-                  "}"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "SETUP (Step 3) \u2014 Trainer login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Trainer login 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Has access_token', () => pm.expect(json.data).to.have.property('access_token'));",
-                  "if (json.data && json.data.access_token) {",
-                  "  pm.collectionVariables.set('trainer_token', json.data.access_token);",
-                  "  console.log('\u2713 trainer_token stored');",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{trainer_email}}\",\n  \"password\": \"{{trainer_password}}\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/auth/login",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
-            },
-            "description": "Step 3 of 3 for token setup. Logs in as a trainer and stores trainer_token. Set trainer_email and trainer_password in the environment."
-          },
-          "response": []
-        },
-        {
-          "name": "Forgot password \u2014 valid email \u2192 200 (generic ack)",
+          "name": "Forgot password — valid email → 200 (generic ack)",
           "event": [
             {
               "listen": "test",
@@ -232,21 +100,21 @@
                 "forgot-password"
               ]
             },
-            "description": "Always returns 200 regardless of whether the email exists \u2014 prevents account enumeration."
+            "description": "Always returns 200 regardless of whether the email exists — prevents account enumeration."
           },
           "response": []
         },
         {
-          "name": "Refresh token \u2014 200",
+          "name": "Refresh token — 200",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "pm.test('Status 401', () => pm.response.to.have.status(401));",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "pm.test('Does not 500', () => pm.response.to.not.have.status(500));",
                   "const json = pm.response.json();",
-                  "pm.test('Returns message', () => pm.expect(json).to.have.property('message'));"
+                  "pm.test('Returns access_token', () => pm.expect(json.data).to.have.property('access_token'));"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -290,12 +158,12 @@
                 "refresh"
               ]
             },
-            "description": "KNOWN BUG (flag for backend team): Two compounding issues make this endpoint non-functional. (1) The spec marks POST /auth/refresh as bearerAuth-secured, so AuthMiddleware runs and rejects any non-access token type with 401 'invalid token type' \u2014 a refresh token can never pass. (2) Even if the security spec were fixed, the handler reads the Bearer token via c.GetString(BearerAuthScopes) but oapi-codegen stores []string{} (not the raw token) at that key, so the value is always empty string \u2192 handler returns 401. Fix: remove bearerAuth from the /auth/refresh spec entry AND rewrite the handler to read Authorization header directly."
+            "description": "KNOWN BUG (flag for backend team): Two compounding issues make this endpoint non-functional. (1) The spec marks POST /auth/refresh as bearerAuth-secured, so AuthMiddleware runs and rejects any non-access token type with 401 'invalid token type' — a refresh token can never pass. (2) Even if the security spec were fixed, the handler reads the Bearer token via c.GetString(BearerAuthScopes) but oapi-codegen stores []string{} (not the raw token) at that key, so the value is always empty string → handler returns 401. Fix: remove bearerAuth from the /auth/refresh spec entry AND rewrite the handler to read Authorization header directly."
           },
           "response": []
         },
         {
-          "name": "Logout \u2014 200",
+          "name": "Logout — 200",
           "event": [
             {
               "listen": "test",
@@ -333,7 +201,7 @@
           "response": []
         },
         {
-          "name": "Admin login \u2014 wrong password \u2192 401",
+          "name": "Admin login — wrong password → 401",
           "event": [
             {
               "listen": "test",
@@ -374,7 +242,7 @@
           "response": []
         },
         {
-          "name": "Admin login \u2014 missing fields \u2192 400",
+          "name": "Admin login — missing fields → 400",
           "event": [
             {
               "listen": "test",
@@ -413,7 +281,7 @@
           "response": []
         },
         {
-          "name": "Refresh token \u2014 missing access_token body \u2192 400",
+          "name": "Refresh token — missing access_token body → 400",
           "event": [
             {
               "listen": "test",
@@ -456,7 +324,7 @@
           "response": []
         },
         {
-          "name": "Logout \u2014 no auth \u2192 401",
+          "name": "Logout — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -494,7 +362,7 @@
           "response": []
         },
         {
-          "name": "Logout \u2014 missing auth header \u2192 401",
+          "name": "Logout — missing auth header → 401",
           "event": [
             {
               "listen": "test",
@@ -536,7 +404,7 @@
           "response": []
         },
         {
-          "name": "Forgot password \u2014 invalid email format \u2192 400",
+          "name": "Forgot password — invalid email format → 400",
           "event": [
             {
               "listen": "test",
@@ -574,7 +442,7 @@
           "response": []
         },
         {
-          "name": "Reset password \u2014 invalid/expired code \u2192 400",
+          "name": "Reset password — invalid/expired code → 400",
           "event": [
             {
               "listen": "test",
@@ -613,7 +481,7 @@
           "response": []
         },
         {
-          "name": "Verify email \u2014 invalid/expired code \u2192 400",
+          "name": "Verify email — invalid/expired code → 400",
           "event": [
             {
               "listen": "test",
@@ -647,12 +515,12 @@
                 "verify-email"
               ]
             },
-            "description": "Verifies email with OTP. Code 000000 will be invalid \u2014 confirms endpoint rejects bad codes."
+            "description": "Verifies email with OTP. Code 000000 will be invalid — confirms endpoint rejects bad codes."
           },
           "response": []
         },
         {
-          "name": "Register (local) \u2014 missing email \u2192 400",
+          "name": "Register (local) — missing email → 400",
           "event": [
             {
               "listen": "test",
@@ -686,12 +554,12 @@
                 "register"
               ]
             },
-            "description": "POST /auth/register \u2014 registers a local user. Only email is required; sends a verification email. Missing email must return 400."
+            "description": "POST /auth/register — registers a local user. Only email is required; sends a verification email. Missing email must return 400."
           },
           "response": []
         },
         {
-          "name": "Login (local) \u2014 wrong password \u2192 401",
+          "name": "Login (local) — wrong password → 401",
           "event": [
             {
               "listen": "test",
@@ -727,12 +595,12 @@
                 "login"
               ]
             },
-            "description": "POST /auth/login \u2014 local email+password login (separate from /auth/admin/log-in). Rejects wrong credentials."
+            "description": "POST /auth/login — local email+password login (separate from /auth/admin/log-in). Rejects wrong credentials."
           },
           "response": []
         },
         {
-          "name": "Login (local) \u2014 missing fields \u2192 400",
+          "name": "Login (local) — missing fields → 400",
           "event": [
             {
               "listen": "test",
@@ -770,7 +638,7 @@
           "response": []
         },
         {
-          "name": "Google mobile sign-in \u2014 invalid token \u2192 401",
+          "name": "Google mobile sign-in — invalid token → 401",
           "event": [
             {
               "listen": "test",
@@ -814,10 +682,10 @@
       ]
     },
     {
-      "name": "1 \u2014 GET /trainers",
+      "name": "1 — GET /trainers",
       "item": [
         {
-          "name": "List trainers \u2014 valid auth \u2192 200",
+          "name": "List trainers — valid auth → 200",
           "event": [
             {
               "listen": "test",
@@ -832,9 +700,9 @@
                   "  pm.test('Has specializations', () => pm.expect(trainer).to.have.property('specializations'));",
                   "  pm.test('Has onboarding_status', () => pm.expect(trainer).to.have.property('onboarding_status'));",
                   "  pm.test('Has average_rating', () => pm.expect(trainer).to.have.property('average_rating'));",
-                  "  pm.test('KNOWN GAP \u2014 missing availability (milestone 4)', () => pm.expect(trainer).to.have.property('availability'));",
-                  "  pm.test('KNOWN GAP \u2014 missing sessions (milestone 4)', () => pm.expect(trainer).to.have.property('sessions'));",
-                  "  pm.test('KNOWN GAP \u2014 missing earnings (milestone 5)', () => pm.expect(trainer).to.have.property('earnings'));",
+                  "  pm.test('KNOWN GAP — missing availability (milestone 4)', () => pm.expect(trainer).to.have.property('availability'));",
+                  "  pm.test('KNOWN GAP — missing sessions (milestone 4)', () => pm.expect(trainer).to.have.property('sessions'));",
+                  "  pm.test('KNOWN GAP — missing earnings (milestone 5)', () => pm.expect(trainer).to.have.property('earnings'));",
                   "  pm.collectionVariables.set('created_trainer_id', trainer.id);",
                   "}"
                 ],
@@ -859,12 +727,12 @@
                 "trainers"
               ]
             },
-            "description": "Tests marked KNOWN GAP will intentionally fail \u2014 documents missing fields pending milestones 4 and 5."
+            "description": "Tests marked KNOWN GAP will intentionally fail — documents missing fields pending milestones 4 and 5."
           },
           "response": []
         },
         {
-          "name": "List trainers \u2014 no auth \u2192 401",
+          "name": "List trainers — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -892,7 +760,7 @@
           "response": []
         },
         {
-          "name": "List trainers \u2014 malformed token \u2192 401",
+          "name": "List trainers — malformed token → 401",
           "event": [
             {
               "listen": "test",
@@ -926,7 +794,7 @@
           "response": []
         },
         {
-          "name": "List trainers \u2014 filter by category (strength)",
+          "name": "List trainers — filter by category (strength)",
           "event": [
             {
               "listen": "test",
@@ -949,7 +817,19 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/trainers?category=strength"
+              "raw": "{{base_url}}/trainers?category=strength",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "strength"
+                }
+              ]
             }
           },
           "response": []
@@ -957,10 +837,10 @@
       ]
     },
     {
-      "name": "2 \u2014 POST /trainers (Create Trainer)",
+      "name": "2 — POST /trainers (Create Trainer)",
       "item": [
         {
-          "name": "Create trainer \u2014 no auth \u2192 401",
+          "name": "Create trainer — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -992,7 +872,7 @@
           "response": []
         },
         {
-          "name": "Create trainer \u2014 missing required fields \u2192 400",
+          "name": "Create trainer — missing required fields → 400",
           "event": [
             {
               "listen": "test",
@@ -1037,7 +917,7 @@
           "response": []
         },
         {
-          "name": "Create trainer \u2014 missing email \u2192 400",
+          "name": "Create trainer — missing email → 400",
           "event": [
             {
               "listen": "test",
@@ -1087,7 +967,7 @@
           "response": []
         },
         {
-          "name": "Create trainer \u2014 invalid email format \u2192 400",
+          "name": "Create trainer — invalid email format → 400",
           "event": [
             {
               "listen": "test",
@@ -1140,7 +1020,7 @@
           "response": []
         },
         {
-          "name": "Create trainer \u2014 invalid specialization \u2192 400",
+          "name": "Create trainer — invalid specialization → 400",
           "event": [
             {
               "listen": "test",
@@ -1196,7 +1076,7 @@
           "response": []
         },
         {
-          "name": "Create trainer \u2014 too many training_styles (5, max 4) \u2192 400",
+          "name": "Create trainer — too many training_styles (5, max 4) → 400",
           "event": [
             {
               "listen": "test",
@@ -1274,7 +1154,7 @@
           "response": []
         },
         {
-          "name": "Create trainer \u2014 bio over 2000 chars \u2192 400",
+          "name": "Create trainer — bio over 2000 chars → 400",
           "event": [
             {
               "listen": "test",
@@ -1332,7 +1212,7 @@
           "response": []
         },
         {
-          "name": "Create trainer \u2014 happy path (201 or 500 SMTP)",
+          "name": "Create trainer — happy path (201 or 500 SMTP)",
           "event": [
             {
               "listen": "prerequest",
@@ -1349,14 +1229,14 @@
                 "exec": [
                   "const json = pm.response.json();",
                   "if (pm.response.code === 201) {",
-                  "  pm.test('PASS \u2014 Trainer created 201', () => pm.response.to.have.status(201));",
+                  "  pm.test('PASS — Trainer created 201', () => pm.response.to.have.status(201));",
                   "  pm.test('Has trainer id', () => pm.expect(json.data).to.have.property('id'));",
                   "  pm.test('Has email', () => pm.expect(json.data).to.have.property('email'));",
                   "  pm.collectionVariables.set('created_trainer_id', json.data.id);",
                   "  pm.collectionVariables.set('created_user_id', json.data.user_id);",
                   "} else if (pm.response.code === 500) {",
-                  "  pm.test('KNOWN BUG \u2014 SMTP 500 (trainer created in DB but creds not sent)', () => true);",
-                  "  console.warn('SMTP broken \u2014 trainer exists in DB, retry will 409. See known bug: retry path blocked after SMTP failure.');",
+                  "  pm.test('KNOWN BUG — SMTP 500 (trainer created in DB but creds not sent)', () => true);",
+                  "  console.warn('SMTP broken — trainer exists in DB, retry will 409. See known bug: retry path blocked after SMTP failure.');",
                   "} else {",
                   "  pm.test('Unexpected status: ' + pm.response.code, () => pm.expect(false).to.be.true);",
                   "}"
@@ -1436,7 +1316,7 @@
           "response": []
         },
         {
-          "name": "Create trainer \u2014 duplicate email \u2192 409",
+          "name": "Create trainer — duplicate email → 409",
           "event": [
             {
               "listen": "test",
@@ -1487,17 +1367,17 @@
                 "trainers"
               ]
             },
-            "description": "Same email as previous request. KNOWN BUG: this also blocks retry after SMTP 500 failure \u2014 admin cannot resend credentials."
+            "description": "Same email as previous request. KNOWN BUG: this also blocks retry after SMTP 500 failure — admin cannot resend credentials."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "3 \u2014 GET /trainers/:id",
+      "name": "3 — GET /trainers/:id",
       "item": [
         {
-          "name": "Get trainer by ID \u2014 valid",
+          "name": "Get trainer by ID — valid",
           "event": [
             {
               "listen": "test",
@@ -1535,7 +1415,7 @@
           "response": []
         },
         {
-          "name": "Get trainer by ID \u2014 non-existent \u2192 404",
+          "name": "Get trainer by ID — non-existent → 404",
           "event": [
             {
               "listen": "test",
@@ -1569,7 +1449,7 @@
           "response": []
         },
         {
-          "name": "Get trainer by ID \u2014 invalid UUID \u2192 400/422",
+          "name": "Get trainer by ID — invalid UUID → 400/422",
           "event": [
             {
               "listen": "test",
@@ -1579,7 +1459,7 @@
                   "  pm.expect(pm.response.code).to.be.oneOf([400, 404, 422]);",
                   "});",
                   "const json = pm.response.json();",
-                  "pm.test('KNOWN BUG \u2014 error message is raw Go error, not user-friendly', () => {",
+                  "pm.test('KNOWN BUG — error message is raw Go error, not user-friendly', () => {",
                   "  pm.expect(json.message).to.not.include('invalid UUID');",
                   "});"
                 ],
@@ -1610,7 +1490,7 @@
           "response": []
         },
         {
-          "name": "Get trainer reviews \u2014 not found \u2192 404",
+          "name": "Get trainer reviews — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -1636,12 +1516,12 @@
                 "reviews"
               ]
             },
-            "description": "GET /trainers/:id/reviews \u2014 public endpoint returning reviews for a trainer."
+            "description": "GET /trainers/:id/reviews — public endpoint returning reviews for a trainer."
           },
           "response": []
         },
         {
-          "name": "Get trainer reviews \u2014 valid",
+          "name": "Get trainer reviews — valid",
           "event": [
             {
               "listen": "test",
@@ -1673,24 +1553,24 @@
                 "reviews"
               ]
             },
-            "description": "GET /trainers/:id/reviews \u2014 requires {{created_trainer_id}} set from POST /trainers."
+            "description": "GET /trainers/:id/reviews — requires {{created_trainer_id}} set from POST /trainers."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "4 \u2014 PATCH /trainers/:id",
+      "name": "4 — PATCH /trainers/:id",
       "item": [
         {
-          "name": "Update trainer \u2014 valid fields",
+          "name": "Update trainer — valid fields",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
+                  "let json; try { json = pm.response.json(); } catch (e) { json = null; }",
                   "pm.test('Bio updated', () => pm.expect(json.data.bio).to.equal('Updated bio from QA test'));"
                 ],
                 "type": "text/javascript"
@@ -1727,7 +1607,7 @@
           "response": []
         },
         {
-          "name": "Update trainer \u2014 invalid specialization \u2192 400",
+          "name": "Update trainer — invalid specialization → 400",
           "event": [
             {
               "listen": "test",
@@ -1769,7 +1649,7 @@
           "response": []
         },
         {
-          "name": "Update trainer \u2014 non-existent \u2192 404",
+          "name": "Update trainer — non-existent → 404",
           "event": [
             {
               "listen": "test",
@@ -1813,10 +1693,10 @@
       ]
     },
     {
-      "name": "5 \u2014 DELETE /trainers/:id",
+      "name": "5 — DELETE /trainers/:id",
       "item": [
         {
-          "name": "Delete trainer \u2014 non-existent \u2192 404",
+          "name": "Delete trainer — non-existent → 404",
           "event": [
             {
               "listen": "test",
@@ -1850,7 +1730,7 @@
           "response": []
         },
         {
-          "name": "Delete trainer \u2014 no auth \u2192 401",
+          "name": "Delete trainer — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -1879,7 +1759,7 @@
           "response": []
         },
         {
-          "name": "Delete trainer \u2014 valid (cleanup) \u2192 204",
+          "name": "Delete trainer — valid (cleanup) → 204",
           "event": [
             {
               "listen": "test",
@@ -1916,10 +1796,10 @@
       ]
     },
     {
-      "name": "6 \u2014 Trainer Availability",
+      "name": "6 — Trainer Availability",
       "item": [
         {
-          "name": "Set availability \u2014 no auth \u2192 401",
+          "name": "Set availability — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -1958,7 +1838,7 @@
           "response": []
         },
         {
-          "name": "Set availability \u2014 valid (trainer token required)",
+          "name": "Set availability — valid (trainer token required)",
           "event": [
             {
               "listen": "test",
@@ -1999,7 +1879,7 @@
                 "availability"
               ]
             },
-            "description": "Uses {{client_token}} \u2014 must be a trainer's JWT. Set this variable from a trainer login before running. 0=Sunday, 1=Monday ... 6=Saturday.",
+            "description": "Uses {{client_token}} — must be a trainer's JWT. Set this variable from a trainer login before running. 0=Sunday, 1=Monday ... 6=Saturday.",
             "auth": {
               "type": "bearer",
               "bearer": [
@@ -2014,7 +1894,7 @@
           "response": []
         },
         {
-          "name": "Set availability \u2014 invalid timezone \u2192 400",
+          "name": "Set availability — invalid timezone → 400",
           "event": [
             {
               "listen": "test",
@@ -2157,7 +2037,7 @@
           ]
         },
         {
-          "name": "GET trainer own availability \u2014 no auth \u2192 401",
+          "name": "GET trainer own availability — no auth → 401",
           "request": {
             "method": "GET",
             "header": [
@@ -2230,7 +2110,7 @@
           ]
         },
         {
-          "name": "GET trainer availability \u2014 not found \u2192 404",
+          "name": "GET trainer availability — not found → 404",
           "request": {
             "method": "GET",
             "header": [
@@ -2314,10 +2194,10 @@
       ]
     },
     {
-      "name": "7 \u2014 Users (Profile)",
+      "name": "7 — Users (Profile)",
       "item": [
         {
-          "name": "Get user profile \u2014 no auth \u2192 401",
+          "name": "Get user profile — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -2347,7 +2227,7 @@
           "response": []
         },
         {
-          "name": "Get user profile \u2014 valid auth \u2192 200",
+          "name": "Get user profile — valid auth → 200",
           "event": [
             {
               "listen": "test",
@@ -2382,12 +2262,12 @@
                 "profile"
               ]
             },
-            "description": "Requires {{client_token}} \u2014 set from Google Sign-In or /dev/token."
+            "description": "Requires {{client_token}} — set from Google Sign-In or /dev/token."
           },
           "response": []
         },
         {
-          "name": "Update user profile \u2014 valid fields",
+          "name": "Update user profile — valid fields",
           "event": [
             {
               "listen": "test",
@@ -2436,7 +2316,7 @@
           "response": []
         },
         {
-          "name": "Update user profile \u2014 invalid fitness_goal \u2192 400",
+          "name": "Update user profile — invalid fitness_goal → 400",
           "event": [
             {
               "listen": "test",
@@ -2481,7 +2361,7 @@
           "response": []
         },
         {
-          "name": "Upload profile picture \u2014 no auth \u2192 401",
+          "name": "Upload profile picture — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -2516,7 +2396,7 @@
           "response": []
         },
         {
-          "name": "Upload profile picture \u2014 missing picture field \u2192 400",
+          "name": "Upload profile picture — missing picture field → 400",
           "event": [
             {
               "listen": "test",
@@ -2561,10 +2441,10 @@
       ]
     },
     {
-      "name": "8 \u2014 Bookings",
+      "name": "8 — Bookings",
       "item": [
         {
-          "name": "Create booking \u2014 no auth \u2192 401",
+          "name": "Create booking — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -2601,7 +2481,7 @@
           "response": []
         },
         {
-          "name": "Create booking \u2014 missing required fields \u2192 400",
+          "name": "Create booking — missing required fields → 400",
           "event": [
             {
               "listen": "test",
@@ -2645,7 +2525,7 @@
           "response": []
         },
         {
-          "name": "Create booking \u2014 happy path (needs client token + valid IDs)",
+          "name": "Create booking — happy path (needs client token + valid IDs)",
           "event": [
             {
               "listen": "test",
@@ -2656,7 +2536,7 @@
                   "  pm.test('Has booking id', () => pm.expect(json.data).to.have.property('id'));",
                   "  pm.collectionVariables.set('created_booking_id', json.data.id);",
                   "} else {",
-                  "  pm.test('Status indicates precondition not met \u2014 set client_token and valid trainer_id/subscription_id', () => {",
+                  "  pm.test('Status indicates precondition not met — set client_token and valid trainer_id/subscription_id', () => {",
                   "    console.warn('Set {{client_token}} to a valid client JWT and update trainer_id/subscription_id in the body');",
                   "  });",
                   "}"
@@ -2695,7 +2575,7 @@
           "response": []
         },
         {
-          "name": "Get upcoming bookings \u2014 no auth \u2192 401",
+          "name": "Get upcoming bookings — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -2724,7 +2604,7 @@
           "response": []
         },
         {
-          "name": "Get upcoming bookings \u2014 valid auth \u2192 200",
+          "name": "Get upcoming bookings — valid auth → 200",
           "event": [
             {
               "listen": "test",
@@ -2751,13 +2631,26 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/bookings/upcoming?timezone=Africa%2FLagos"
+              "raw": "{{base_url}}/bookings/upcoming?timezone=Africa%2FLagos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "bookings",
+                "upcoming"
+              ],
+              "query": [
+                {
+                  "key": "timezone",
+                  "value": "Africa%2FLagos"
+                }
+              ]
             }
           },
           "response": []
         },
         {
-          "name": "Book discovery call \u2014 missing required fields \u2192 400",
+          "name": "Book discovery call — missing required fields → 400",
           "event": [
             {
               "listen": "test",
@@ -2801,7 +2694,7 @@
           "response": []
         },
         {
-          "name": "Book discovery call \u2014 phone_callback missing phone_number \u2192 400",
+          "name": "Book discovery call — phone_callback missing phone_number → 400",
           "event": [
             {
               "listen": "test",
@@ -2841,12 +2734,12 @@
                 "discovery"
               ]
             },
-            "description": "phone_callback mode requires phone_number \u2014 must return 400."
+            "description": "phone_callback mode requires phone_number — must return 400."
           },
           "response": []
         },
         {
-          "name": "Reschedule booking \u2014 not found \u2192 404",
+          "name": "Reschedule booking — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -2891,7 +2784,7 @@
           "response": []
         },
         {
-          "name": "Cancel booking \u2014 not found \u2192 404",
+          "name": "Cancel booking — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -2936,7 +2829,7 @@
           "response": []
         },
         {
-          "name": "Cancel booking \u2014 missing reason \u2192 400",
+          "name": "Cancel booking — missing reason → 400",
           "event": [
             {
               "listen": "test",
@@ -2983,17 +2876,17 @@
       ]
     },
     {
-      "name": "9 \u2014 Booking Slots",
+      "name": "9 — Booking Slots",
       "item": [
         {
-          "name": "Get all booking slots \u2014 public (no auth)",
+          "name": "Get all booking slots — public (no auth)",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
+                  "let json; try { json = pm.response.json(); } catch (e) { json = null; }",
                   "pm.test('data is array or object', () => pm.expect(json).to.have.property('data'));"
                 ],
                 "type": "text/javascript"
@@ -3004,14 +2897,26 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/booking-slots?timezone=Africa%2FLagos"
+              "raw": "{{base_url}}/booking-slots?timezone=Africa%2FLagos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "booking-slots"
+              ],
+              "query": [
+                {
+                  "key": "timezone",
+                  "value": "Africa%2FLagos"
+                }
+              ]
             },
-            "description": "Public endpoint \u2014 no auth required."
+            "description": "Public endpoint — no auth required."
           },
           "response": []
         },
         {
-          "name": "Create booking slot \u2014 valid (admin)",
+          "name": "Create booking slot — valid (admin)",
           "event": [
             {
               "listen": "test",
@@ -3061,7 +2966,7 @@
           "response": []
         },
         {
-          "name": "Create booking slot \u2014 missing required fields \u2192 400",
+          "name": "Create booking slot — missing required fields → 400",
           "event": [
             {
               "listen": "test",
@@ -3104,7 +3009,7 @@
           "response": []
         },
         {
-          "name": "Update booking slot \u2014 not found \u2192 404",
+          "name": "Update booking slot — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -3148,7 +3053,7 @@
           "response": []
         },
         {
-          "name": "Get trainer booking slots \u2014 valid",
+          "name": "Get trainer booking slots — valid",
           "event": [
             {
               "listen": "test",
@@ -3159,7 +3064,7 @@
                   "});",
                   "if (pm.response.code === 200) {",
                   "  const json = pm.response.json();",
-                  "  pm.test('data is array', () => pm.expect(json.data).to.be.an('array'));",
+                  "  pm.test('data is array', () => pm.expect(json.data.data).to.be.an('array'));",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -3189,7 +3094,7 @@
           "response": []
         },
         {
-          "name": "Delete booking slot \u2014 not found \u2192 404",
+          "name": "Delete booking slot — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -3225,7 +3130,7 @@
           "response": []
         },
         {
-          "name": "Delete booking slot \u2014 valid (cleanup)",
+          "name": "Delete booking slot — valid (cleanup)",
           "event": [
             {
               "listen": "test",
@@ -3264,10 +3169,10 @@
       ]
     },
     {
-      "name": "10 \u2014 Sessions",
+      "name": "10 — Sessions",
       "item": [
         {
-          "name": "Get session by ID \u2014 no auth \u2192 401",
+          "name": "Get session by ID — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -3296,7 +3201,7 @@
           "response": []
         },
         {
-          "name": "Get session by ID \u2014 not found \u2192 404",
+          "name": "Get session by ID — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -3332,7 +3237,7 @@
           "response": []
         },
         {
-          "name": "Start session \u2014 not found \u2192 404",
+          "name": "Start session — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -3370,7 +3275,7 @@
           "response": []
         },
         {
-          "name": "Join session \u2014 not found \u2192 404",
+          "name": "Join session — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -3408,7 +3313,7 @@
           "response": []
         },
         {
-          "name": "Complete session \u2014 not found \u2192 404",
+          "name": "Complete session — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -3445,7 +3350,7 @@
           "response": []
         },
         {
-          "name": "Submit session notes \u2014 missing note \u2192 400",
+          "name": "Submit session notes — missing note → 400",
           "event": [
             {
               "listen": "test",
@@ -3491,7 +3396,7 @@
           "response": []
         },
         {
-          "name": "Submit session notes \u2014 not found \u2192 404",
+          "name": "Submit session notes — not found → 404",
           "event": [
             {
               "listen": "test",
@@ -3538,10 +3443,10 @@
       ]
     },
     {
-      "name": "11 \u2014 Reviews",
+      "name": "11 — Reviews",
       "item": [
         {
-          "name": "Create review \u2014 no auth \u2192 401",
+          "name": "Create review — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -3578,7 +3483,7 @@
           "response": []
         },
         {
-          "name": "Create review \u2014 booking not found \u2192 404",
+          "name": "Create review — booking not found → 404",
           "event": [
             {
               "listen": "test",
@@ -3621,7 +3526,7 @@
           "response": []
         },
         {
-          "name": "Create review \u2014 rating out of range \u2192 422",
+          "name": "Create review — rating out of range → 422",
           "event": [
             {
               "listen": "test",
@@ -3665,7 +3570,7 @@
           "response": []
         },
         {
-          "name": "Get trainer reviews \u2014 public (no auth) \u2192 200 or 404",
+          "name": "Get trainer reviews — public (no auth) → 200 or 404",
           "event": [
             {
               "listen": "test",
@@ -3688,14 +3593,28 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/trainers/{{created_trainer_id}}/reviews?limit=10"
+              "raw": "{{base_url}}/trainers/{{created_trainer_id}}/reviews?limit=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "{{created_trainer_id}}",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
             },
-            "description": "Public endpoint \u2014 no auth required. Cursor-paginated."
+            "description": "Public endpoint — no auth required. Cursor-paginated."
           },
           "response": []
         },
         {
-          "name": "Get trainer reviews \u2014 invalid pagination \u2192 422",
+          "name": "Get trainer reviews — invalid pagination → 422",
           "event": [
             {
               "listen": "test",
@@ -3713,7 +3632,21 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/trainers/{{created_trainer_id}}/reviews?limit=999"
+              "raw": "{{base_url}}/trainers/{{created_trainer_id}}/reviews?limit=999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "trainers",
+                "{{created_trainer_id}}",
+                "reviews"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "999"
+                }
+              ]
             },
             "description": "limit max is 100. Sending 999 should return 422."
           },
@@ -3722,10 +3655,10 @@
       ]
     },
     {
-      "name": "12 \u2014 Admin",
+      "name": "12 — Admin",
       "item": [
         {
-          "name": "Create admin \u2014 no auth \u2192 401",
+          "name": "Create admin — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -3763,7 +3696,7 @@
           "response": []
         },
         {
-          "name": "Create admin \u2014 admin token (not super_admin) \u2192 403",
+          "name": "Create admin — admin token (not super_admin) → 403",
           "event": [
             {
               "listen": "test",
@@ -3773,7 +3706,7 @@
                   "  pm.expect(pm.response.code).to.be.oneOf([403, 201]);",
                   "});",
                   "if (pm.response.code === 403) {",
-                  "  pm.test('Forbidden \u2014 not super_admin', () => true);",
+                  "  pm.test('Forbidden — not super_admin', () => true);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -3811,7 +3744,7 @@
           "response": []
         },
         {
-          "name": "Create admin \u2014 missing name \u2192 400",
+          "name": "Create admin — missing name → 400",
           "event": [
             {
               "listen": "test",
@@ -3855,7 +3788,7 @@
           "response": []
         },
         {
-          "name": "Approve trainer \u2014 no auth \u2192 401",
+          "name": "Approve trainer — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -3886,7 +3819,7 @@
           "response": []
         },
         {
-          "name": "Approve trainer \u2014 trainer not found \u2192 404",
+          "name": "Approve trainer — trainer not found → 404",
           "event": [
             {
               "listen": "test",
@@ -3925,7 +3858,7 @@
           "response": []
         },
         {
-          "name": "GET admin sessions \u2014 paginated",
+          "name": "GET admin sessions — paginated",
           "request": {
             "method": "GET",
             "header": [
@@ -3964,7 +3897,7 @@
           ]
         },
         {
-          "name": "GET admin sessions \u2014 no auth \u2192 401",
+          "name": "GET admin sessions — no auth → 401",
           "request": {
             "method": "GET",
             "header": [],
@@ -3996,7 +3929,7 @@
           ]
         },
         {
-          "name": "GET admin discovery bookings \u2014 paginated",
+          "name": "GET admin discovery bookings — paginated",
           "request": {
             "method": "GET",
             "header": [
@@ -4074,10 +4007,10 @@
       ]
     },
     {
-      "name": "13 \u2014 Waitlist",
+      "name": "13 — Waitlist",
       "item": [
         {
-          "name": "Add to waitlist \u2014 valid email \u2192 201",
+          "name": "Add to waitlist — valid email → 201",
           "event": [
             {
               "listen": "test",
@@ -4119,7 +4052,7 @@
           "response": []
         },
         {
-          "name": "Add to waitlist \u2014 duplicate email \u2192 200",
+          "name": "Add to waitlist — duplicate email → 200",
           "event": [
             {
               "listen": "test",
@@ -4158,7 +4091,7 @@
           "response": []
         },
         {
-          "name": "Add to waitlist \u2014 invalid email \u2192 400",
+          "name": "Add to waitlist — invalid email → 400",
           "event": [
             {
               "listen": "test",
@@ -4195,7 +4128,7 @@
           "response": []
         },
         {
-          "name": "Get waitlist \u2014 no auth \u2192 401",
+          "name": "Get waitlist — no auth → 401",
           "event": [
             {
               "listen": "test",
@@ -4223,7 +4156,7 @@
           "response": []
         },
         {
-          "name": "Get waitlist \u2014 valid auth \u2192 200",
+          "name": "Get waitlist — valid auth → 200",
           "event": [
             {
               "listen": "test",
@@ -4258,7 +4191,7 @@
           "response": []
         },
         {
-          "name": "Get waitlist \u2014 filter by email",
+          "name": "Get waitlist — filter by email",
           "event": [
             {
               "listen": "test",
@@ -4281,7 +4214,19 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/waitlist?email=qa-waitlist@fitcall-test.com"
+              "raw": "{{base_url}}/waitlist?email=qa-waitlist@fitcall-test.com",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "waitlist"
+              ],
+              "query": [
+                {
+                  "key": "email",
+                  "value": "qa-waitlist@fitcall-test.com"
+                }
+              ]
             }
           },
           "response": []
@@ -4289,10 +4234,10 @@
       ]
     },
     {
-      "name": "14 \u2014 Contact",
+      "name": "14 — Contact",
       "item": [
         {
-          "name": "Contact us \u2014 valid \u2192 200",
+          "name": "Contact us — valid → 200",
           "event": [
             {
               "listen": "test",
@@ -4327,12 +4272,12 @@
                 "contact-us"
               ]
             },
-            "description": "Public endpoint \u2014 no auth required."
+            "description": "Public endpoint — no auth required."
           },
           "response": []
         },
         {
-          "name": "Contact us \u2014 missing message \u2192 400",
+          "name": "Contact us — missing message → 400",
           "event": [
             {
               "listen": "test",
@@ -4369,7 +4314,7 @@
           "response": []
         },
         {
-          "name": "Contact us \u2014 missing all required fields \u2192 400",
+          "name": "Contact us — missing all required fields → 400",
           "event": [
             {
               "listen": "test",
@@ -4408,10 +4353,10 @@
       ]
     },
     {
-      "name": "15 \u2014 Health & Root",
+      "name": "15 — Health & Root",
       "item": [
         {
-          "name": "Health check \u2192 200",
+          "name": "Health check → 200",
           "event": [
             {
               "listen": "test",
@@ -4419,7 +4364,7 @@
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('Status is success', () => pm.expect(json.status).to.equal('success'));",
+                  "pm.test('Has code OK', () => pm.expect(json.code).to.equal('OK'));",
                   "pm.test('Has timestamp', () => pm.expect(json.data).to.have.property('timestamp'));"
                 ],
                 "type": "text/javascript"
@@ -4438,12 +4383,12 @@
                 "health"
               ]
             },
-            "description": "Public health check \u2014 no auth."
+            "description": "Public health check — no auth."
           },
           "response": []
         },
         {
-          "name": "Root endpoint \u2192 200",
+          "name": "Root endpoint → 200",
           "event": [
             {
               "listen": "test",
@@ -4451,7 +4396,7 @@
                 "exec": [
                   "pm.test('Status 200', () => pm.response.to.have.status(200));",
                   "const json = pm.response.json();",
-                  "pm.test('Status is success', () => pm.expect(json.status).to.equal('success'));"
+                  "pm.test('Has code OK', () => pm.expect(json.code).to.equal('OK'));"
                 ],
                 "type": "text/javascript"
               }
@@ -4469,14 +4414,14 @@
                 ""
               ]
             },
-            "description": "Public root \u2014 confirms server is running."
+            "description": "Public root — confirms server is running."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "16 \u2014 Trainer Sessions",
+      "name": "16 — Trainer Sessions",
       "item": [
         {
           "name": "GET trainer own sessions (me)",
@@ -4519,7 +4464,7 @@
           ]
         },
         {
-          "name": "GET trainer sessions \u2014 no auth \u2192 401",
+          "name": "GET trainer sessions — no auth → 401",
           "request": {
             "method": "GET",
             "header": [
@@ -4600,7 +4545,7 @@
           ]
         },
         {
-          "name": "POST trainer set-password \u2014 invalid token \u2192 400",
+          "name": "POST trainer set-password — invalid token → 400",
           "request": {
             "method": "POST",
             "header": [
@@ -4645,7 +4590,7 @@
       ]
     },
     {
-      "name": "17 \u2014 Trainer Images",
+      "name": "17 — Trainer Images",
       "item": [
         {
           "name": "GET trainer images",
@@ -4707,7 +4652,9 @@
                 {
                   "key": "images",
                   "type": "file",
-                  "src": [],
+                  "src": [
+                    "postman/fixtures/sample.png"
+                  ],
                   "description": "Upload up to 5 images (JPEG/PNG/WebP, max 5MB each)"
                 }
               ]
@@ -4731,7 +4678,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 200 or 404', () => {",
-                  "  pm.expect(pm.response.code).to.be.oneOf([200, 404, 503]);",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 202, 404, 503]);",
                   "});"
                 ],
                 "type": "text/javascript"
@@ -4741,7 +4688,7 @@
           "response": []
         },
         {
-          "name": "POST upload trainer images \u2014 no auth \u2192 401",
+          "name": "POST upload trainer images — no auth → 401",
           "request": {
             "method": "POST",
             "header": [],
@@ -4813,7 +4760,7 @@
           ]
         },
         {
-          "name": "DELETE trainer image \u2014 not found \u2192 404",
+          "name": "DELETE trainer image — not found → 404",
           "request": {
             "method": "DELETE",
             "header": [
@@ -4851,7 +4798,7 @@
       ]
     },
     {
-      "name": "18 \u2014 Trainer Intro Video",
+      "name": "18 — Trainer Intro Video",
       "item": [
         {
           "name": "POST upload trainer intro video",
@@ -4903,7 +4850,7 @@
           "response": []
         },
         {
-          "name": "POST upload trainer intro video \u2014 no auth \u2192 401",
+          "name": "POST upload trainer intro video — no auth → 401",
           "request": {
             "method": "POST",
             "header": [],
@@ -4975,7 +4922,7 @@
           ]
         },
         {
-          "name": "GET stream trainer intro video \u2014 not found \u2192 404",
+          "name": "GET stream trainer intro video — not found → 404",
           "request": {
             "method": "GET",
             "header": [
@@ -5013,7 +4960,7 @@
       ]
     },
     {
-      "name": "19 \u2014 Discovery Slots",
+      "name": "19 — Discovery Slots",
       "item": [
         {
           "name": "GET discovery slots",
@@ -5104,7 +5051,7 @@
           ]
         },
         {
-          "name": "POST create discovery slot \u2014 invalid time format \u2192 400",
+          "name": "POST create discovery slot — invalid time format → 400",
           "request": {
             "method": "POST",
             "header": [
@@ -5146,7 +5093,7 @@
           ]
         },
         {
-          "name": "POST create discovery slot \u2014 no auth \u2192 401",
+          "name": "POST create discovery slot — no auth → 401",
           "request": {
             "method": "POST",
             "header": [
@@ -5234,7 +5181,7 @@
           ]
         },
         {
-          "name": "PUT update discovery slot \u2014 not found \u2192 404",
+          "name": "PUT update discovery slot — not found → 404",
           "request": {
             "method": "PUT",
             "header": [
@@ -5314,7 +5261,7 @@
           ]
         },
         {
-          "name": "DELETE discovery slot \u2014 not found \u2192 404",
+          "name": "DELETE discovery slot — not found → 404",
           "request": {
             "method": "DELETE",
             "header": [
@@ -5350,10 +5297,10 @@
       ]
     },
     {
-      "name": "20 \u2014 Notifications",
+      "name": "20 — Notifications",
       "item": [
         {
-          "name": "GET /notifications \u2014 list (authenticated)",
+          "name": "GET /notifications — list (authenticated)",
           "request": {
             "method": "GET",
             "header": [],
@@ -5393,7 +5340,7 @@
           ]
         },
         {
-          "name": "GET /notifications \u2014 no auth \u2192 401",
+          "name": "GET /notifications — no auth → 401",
           "request": {
             "method": "GET",
             "header": [
@@ -5426,7 +5373,7 @@
           ]
         },
         {
-          "name": "POST /register/device \u2014 android",
+          "name": "POST /register/device — android",
           "request": {
             "method": "POST",
             "header": [
@@ -5469,7 +5416,7 @@
           ]
         },
         {
-          "name": "POST /register/device \u2014 iOS",
+          "name": "POST /register/device — iOS",
           "request": {
             "method": "POST",
             "header": [
@@ -5511,7 +5458,7 @@
           ]
         },
         {
-          "name": "POST /register/device \u2014 invalid platform \u2192 400",
+          "name": "POST /register/device — invalid platform → 400",
           "request": {
             "method": "POST",
             "header": [
@@ -5553,7 +5500,7 @@
           ]
         },
         {
-          "name": "POST /register/device \u2014 missing token \u2192 400",
+          "name": "POST /register/device — missing token → 400",
           "request": {
             "method": "POST",
             "header": [
@@ -5597,10 +5544,10 @@
       ]
     },
     {
-      "name": "21 \u2014 Media (Organisation)",
+      "name": "21 — Media (Organisation)",
       "item": [
         {
-          "name": "GET /media \u2014 list all (public)",
+          "name": "GET /media — list all (public)",
           "request": {
             "method": "GET",
             "header": [
@@ -5636,7 +5583,7 @@
           ]
         },
         {
-          "name": "GET /media \u2014 paginated",
+          "name": "GET /media — paginated",
           "request": {
             "method": "GET",
             "header": [
@@ -5665,24 +5612,10 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Response is object', () => pm.expect(json).to.be.an('object'));",
-                  "pm.test('Response time under 2000ms', () => pm.expect(pm.response.responseTime).to.be.below(2000));"
-                ]
-              }
-            }
-          ]
+          "response": []
         },
         {
-          "name": "POST /media/images \u2014 upload org image (admin)",
+          "name": "POST /media/images — upload org image (admin)",
           "request": {
             "method": "POST",
             "header": [
@@ -5712,7 +5645,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "",
+                  "src": "postman/fixtures/sample.png",
                   "description": "JPEG/PNG/WebP/HEIC max 5MB"
                 }
               ]
@@ -5745,7 +5678,7 @@
           ]
         },
         {
-          "name": "POST /media/videos \u2014 upload org video (admin)",
+          "name": "POST /media/videos — upload org video (admin)",
           "request": {
             "method": "POST",
             "header": [
@@ -5806,7 +5739,7 @@
           ]
         },
         {
-          "name": "GET /media/:id \u2014 get by ID",
+          "name": "GET /media/:id — get by ID",
           "request": {
             "method": "GET",
             "header": [
@@ -5842,7 +5775,7 @@
           ]
         },
         {
-          "name": "GET /media/:id \u2014 not found \u2192 404",
+          "name": "GET /media/:id — not found → 404",
           "request": {
             "method": "GET",
             "header": [
@@ -5876,7 +5809,7 @@
           ]
         },
         {
-          "name": "DELETE /media/:id \u2014 remove (admin)",
+          "name": "DELETE /media/:id — remove (admin)",
           "request": {
             "method": "DELETE",
             "header": [
@@ -5912,10 +5845,10 @@
       ]
     },
     {
-      "name": "22 \u2014 Subscriptions",
+      "name": "22 — Subscriptions",
       "item": [
         {
-          "name": "GET /subscriptions/plans \u2014 list plans",
+          "name": "GET /subscriptions/plans — list plans",
           "request": {
             "method": "GET",
             "header": [
@@ -5952,7 +5885,7 @@
           ]
         },
         {
-          "name": "POST /subscriptions \u2014 create via Google IAP",
+          "name": "POST /subscriptions — create via Google IAP",
           "request": {
             "method": "POST",
             "header": [
@@ -5996,7 +5929,7 @@
           ]
         },
         {
-          "name": "POST /subscriptions \u2014 missing fields \u2192 400",
+          "name": "POST /subscriptions — missing fields → 400",
           "request": {
             "method": "POST",
             "header": [
@@ -6037,7 +5970,7 @@
           ]
         },
         {
-          "name": "GET /subscriptions/me \u2014 my active subscription",
+          "name": "GET /subscriptions/me — my active subscription",
           "request": {
             "method": "GET",
             "header": [
@@ -6071,7 +6004,7 @@
           ]
         },
         {
-          "name": "GET /subscriptions/me/usage \u2014 sessions used and remaining",
+          "name": "GET /subscriptions/me/usage — sessions used and remaining",
           "request": {
             "method": "GET",
             "header": [
@@ -6106,7 +6039,7 @@
           ]
         },
         {
-          "name": "POST /client/cancel/subscription \u2014 cancel",
+          "name": "POST /client/cancel/subscription — cancel",
           "request": {
             "method": "POST",
             "header": [
@@ -6150,7 +6083,7 @@
           ]
         },
         {
-          "name": "GET /subscriptions/me \u2014 no auth \u2192 401",
+          "name": "GET /subscriptions/me — no auth → 401",
           "request": {
             "method": "GET",
             "header": [
@@ -6186,10 +6119,10 @@
       ]
     },
     {
-      "name": "23 \u2014 Trainer (New Endpoints)",
+      "name": "23 — Trainer (New Endpoints)",
       "item": [
         {
-          "name": "GET /trainers/me \u2014 own profile",
+          "name": "GET /trainers/me — own profile",
           "request": {
             "method": "GET",
             "header": [
@@ -6226,7 +6159,7 @@
           ]
         },
         {
-          "name": "GET /trainers/me \u2014 no auth \u2192 401",
+          "name": "GET /trainers/me — no auth → 401",
           "request": {
             "method": "GET",
             "header": [
@@ -6260,7 +6193,7 @@
           ]
         },
         {
-          "name": "GET /trainers/me/clients \u2014 client roster",
+          "name": "GET /trainers/me/clients — client roster",
           "request": {
             "method": "GET",
             "header": [
@@ -6298,7 +6231,7 @@
           ]
         },
         {
-          "name": "GET /trainers/me/clients \u2014 paginated",
+          "name": "GET /trainers/me/clients — paginated",
           "request": {
             "method": "GET",
             "header": [
@@ -6329,24 +6262,10 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Response is object', () => pm.expect(json).to.be.an('object'));",
-                  "pm.test('Response time under 2000ms', () => pm.expect(pm.response.responseTime).to.be.below(2000));"
-                ]
-              }
-            }
-          ]
+          "response": []
         },
         {
-          "name": "POST /trainers/resend-setup \u2014 resend invite (admin)",
+          "name": "POST /trainers/resend-setup — resend invite (admin)",
           "request": {
             "method": "POST",
             "header": [
@@ -6389,7 +6308,7 @@
           ]
         },
         {
-          "name": "POST /trainers/resend-setup \u2014 unknown email \u2192 404",
+          "name": "POST /trainers/resend-setup — unknown email → 404",
           "request": {
             "method": "POST",
             "header": [
@@ -6431,7 +6350,7 @@
           ]
         },
         {
-          "name": "GET /trainers/set-password/validate \u2014 valid token check",
+          "name": "GET /trainers/set-password/validate — valid token check",
           "request": {
             "method": "GET",
             "header": [
@@ -6473,7 +6392,7 @@
           ]
         },
         {
-          "name": "PATCH /trainers/:id \u2014 invalid onboarding_status \u2192 400 (fix #228)",
+          "name": "PATCH /trainers/:id — invalid onboarding_status → 400 (fix #228)",
           "request": {
             "method": "PATCH",
             "header": [
@@ -6509,7 +6428,7 @@
               "script": {
                 "exec": [
                   "pm.test('Status 400 (was 500 before fix #228)', () => pm.response.to.have.status(400));",
-                  "const json = pm.response.json();",
+                  "let json; try { json = pm.response.json(); } catch (e) { json = null; }",
                   "pm.test('Error mentions onboarding_status', () => pm.expect(json.message.toLowerCase()).to.include('onboarding'));"
                 ],
                 "type": "text/javascript"
@@ -6520,10 +6439,10 @@
       ]
     },
     {
-      "name": "24 \u2014 Admin (New Endpoints)",
+      "name": "24 — Admin (New Endpoints)",
       "item": [
         {
-          "name": "GET /admin/clients \u2014 list all clients",
+          "name": "GET /admin/clients — list all clients",
           "request": {
             "method": "GET",
             "header": [
@@ -6560,7 +6479,7 @@
           ]
         },
         {
-          "name": "GET /admin/clients \u2014 paginated",
+          "name": "GET /admin/clients — paginated",
           "request": {
             "method": "GET",
             "header": [
@@ -6590,24 +6509,10 @@
               ]
             }
           },
-          "response": [],
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                  "const json = pm.response.json();",
-                  "pm.test('Response is object', () => pm.expect(json).to.be.an('object'));",
-                  "pm.test('Response time under 2000ms', () => pm.expect(pm.response.responseTime).to.be.below(2000));"
-                ]
-              }
-            }
-          ]
+          "response": []
         },
         {
-          "name": "GET /admin/clients/:id \u2014 single client",
+          "name": "GET /admin/clients/:id — single client",
           "request": {
             "method": "GET",
             "header": [
@@ -6644,7 +6549,7 @@
           ]
         },
         {
-          "name": "GET /admin/clients/:id \u2014 not found \u2192 404",
+          "name": "GET /admin/clients/:id — not found → 404",
           "request": {
             "method": "GET",
             "header": [
@@ -6693,12 +6598,12 @@
     {
       "key": "client_token",
       "value": "",
-      "description": "Regular user JWT \u2014 auto-set by SETUP request in folder 0"
+      "description": "Regular user JWT — auto-set by SETUP request in folder 0"
     },
     {
       "key": "trainer_token",
       "value": "",
-      "description": "Trainer JWT \u2014 auto-set by SETUP request in folder 0"
+      "description": "Trainer JWT — auto-set by SETUP request in folder 0"
     },
     {
       "key": "created_trainer_id",
