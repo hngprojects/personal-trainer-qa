@@ -23,5 +23,7 @@ CREDS.txt
 
 # Real credentials — never commit
 postman/CREDS.txt
+# Env holds real staging creds at runtime (new tsx harness reads it directly) — never commit
+postman/staging.postman_environment.json
 # Raw per-run newman artifacts
 reports/*-newman-report.json
